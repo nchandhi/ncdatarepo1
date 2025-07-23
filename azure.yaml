@@ -2,15 +2,15 @@
 # metadata:
 #     template: azd-init@1.11.1
 environment:
-  name: conversation-knowledge-mining
+  name: data-agents-fabric-knowledge-mining
   location: eastus
-name: conversation-knowledge-mining
+name: data-agents-fabric-knowledge-mining
 
 requiredVersions:
   azd: ">= 1.15.0"
 
 metadata:
-  template: conversation-knowledge-mining@1.0
+  template: data-agents-fabric-knowledge-mining@1.0
 
 hooks:
   postprovision:
