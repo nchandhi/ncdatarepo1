@@ -87,7 +87,7 @@ var uniqueId = toLower(uniqueString(subscription().id, environmentName, solution
 @description('Location for AI Foundry deployment. This is the location where the AI Foundry resources will be deployed.')
 param aiDeploymentsLocation string
 
-var solutionPrefix = 'dakm${padLeft(take(uniqueId, 10), 10, '0')}'
+var solutionPrefix = 'da${padLeft(take(uniqueId, 12), 12, '0')}'
 
 var containerRegistryName = '${abbrs.containers.containerRegistry}${solutionPrefix}'
 var containerRegistryNameCleaned = replace(containerRegistryName, '-', '')

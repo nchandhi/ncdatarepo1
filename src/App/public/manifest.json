@@ -1,6 +1,6 @@
 {
-  "short_name": "DAKM-Gen",
-  "name": "Knowledge Mining Generic",
+  "short_name": "DA-Gen",
+  "name": "Data Agents",
   "icons": [
     {
       "src": "favicon.ico",

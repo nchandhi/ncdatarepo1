@@ -104,7 +104,7 @@ build_and_push_image() {
 }
 
 # STEP 8: Build and push images with provided tag
-build_and_push_image "dakm-api" "$APIAPP_DOCKERFILE_PATH" "$APIAPP_CONTEXT_PATH" "$AZURE_ENV_IMAGETAG"
-build_and_push_image "dakm-app" "$WEBAPP_DOCKERFILE_PATH" "$WEBAPP_CONTEXT_PATH" "$AZURE_ENV_IMAGETAG"
+build_and_push_image "da-api" "$APIAPP_DOCKERFILE_PATH" "$APIAPP_CONTEXT_PATH" "$AZURE_ENV_IMAGETAG"
+build_and_push_image "da-app" "$WEBAPP_DOCKERFILE_PATH" "$WEBAPP_CONTEXT_PATH" "$AZURE_ENV_IMAGETAG"
 
 echo -e "\nAll Docker images built and pushed successfully with tag: $AZURE_ENV_IMAGETAG"

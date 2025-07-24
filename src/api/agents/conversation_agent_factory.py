@@ -25,7 +25,7 @@ class ConversationAgentFactory(BaseAgentFactory):
         creds = DefaultAzureCredential()
         client = AzureAIAgent.create_client(credential=creds, endpoint=ai_agent_settings.endpoint)
 
-        agent_name = f"DAKM-ConversationKnowledgeAgent-{config.solution_name}"
+        agent_name = f"DA-ConversationKnowledgeAgent-{config.solution_name}"
         agent_instructions = '''You are a helpful assistant.
         Always return the citations as is in final response.
         Always return citation markers exactly as they appear in the source data, placed in the "answer" field at the correct location. Do not modify, convert, or simplify these markers.

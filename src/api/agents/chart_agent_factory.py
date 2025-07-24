@@ -43,7 +43,7 @@ class ChartAgentFactory(BaseAgentFactory):
 
         agent = project_client.agents.create_agent(
             model=config.azure_openai_deployment_model,
-            name=f"DAKM-ChartAgent-{config.solution_name}",
+            name=f"DA-ChartAgent-{config.solution_name}",
             instructions=instructions,
         )
 

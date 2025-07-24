@@ -54,7 +54,7 @@ class SearchAgentFactory(BaseAgentFactory):
 
         agent = project_client.agents.create_agent(
             model=config.azure_openai_deployment_model,
-            name=f"DAKM-ChatWithCallTranscriptsAgent-{config.solution_name}",
+            name=f"DA-ChatWithCallTranscriptsAgent-{config.solution_name}",
             instructions="You are a helpful agent. Use the tools provided and always cite your sources.",
             tools=ai_search.definitions,
             tool_resources=ai_search.resources,

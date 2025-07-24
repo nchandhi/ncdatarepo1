@@ -10,7 +10,7 @@ param appSettings object = {}
 param appServicePlanId string
 param useLocalBuild string
 
-var imageName = 'DOCKER|${acrName}.azurecr.io/dakm-app:${imageTag}'
+var imageName = 'DOCKER|${acrName}.azurecr.io/da-app:${imageTag}'
 //var name = '${solutionName}-app'
 param name string
 module appService 'deploy_app_service.bicep' = {

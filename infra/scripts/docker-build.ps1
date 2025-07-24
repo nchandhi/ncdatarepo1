@@ -107,7 +107,7 @@ function Build-And-Push-Image {
 }
 
 # STEP 8: Build and push images with provided tag
-Build-And-Push-Image "dakm-api" $ApiAppDockerfilePath $ApiAppContextPath $AZURE_ENV_IMAGETAG
-Build-And-Push-Image "dakm-app" $WebAppDockerfilePath $WebAppContextPath $AZURE_ENV_IMAGETAG
+Build-And-Push-Image "da-api" $ApiAppDockerfilePath $ApiAppContextPath $AZURE_ENV_IMAGETAG
+Build-And-Push-Image "da-app" $WebAppDockerfilePath $WebAppContextPath $AZURE_ENV_IMAGETAG
 
 Write-Host "`nAll Docker images built and pushed successfully with tag: $AZURE_ENV_IMAGETAG"

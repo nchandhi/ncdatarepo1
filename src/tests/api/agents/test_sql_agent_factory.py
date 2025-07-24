@@ -46,7 +46,7 @@ async def test_create_agent_creates_new_instance(
     mock_project_client.agents.create_agent.assert_called_once()
     args, kwargs = mock_project_client.agents.create_agent.call_args
     assert kwargs["model"] == "test-model"
-    assert kwargs["name"] == "DAKM-ChatWithSQLDatabaseAgent-test-solution"
+    assert kwargs["name"] == "DA-ChatWithSQLDatabaseAgent-test-solution"
     assert "Generate a valid T-SQL query" in kwargs["instructions"]
 
 
