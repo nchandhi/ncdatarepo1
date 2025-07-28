@@ -84,10 +84,12 @@ async def conversation(request: Request):
 
 
 @router.get("/layout-config")
-async def get_layout_config():
+async def get_layout_config(request: Request):
     layout_config_str = os.getenv("REACT_APP_LAYOUT_CONFIG", "")
     if layout_config_str:
         try:
+            chat_service = ChatService(request=request)
+            chat_service.adjust_processed_data_dates()
             layout_config_json = json.loads(layout_config_str)
             track_event_if_configured("LayoutConfigFetched", {"status": "success"})  # Parse the string into JSON
             return JSONResponse(content=layout_config_json)    # Return the parsed JSON
