@@ -12,6 +12,13 @@ load_dotenv()
 
 class Config:
     def __init__(self):
+        # FabricSQL Database configuration
+        self.fabric_sqldb_database = os.getenv("FABRIC_SQLDB_DATABASE")
+        self.fabric_sqldb_server = os.getenv("FABRIC_SQLDB_SERVER")
+        self.fabric_sqldb_username = os.getenv("FABRIC_SQLDB_USERNAME")
+        self.fabric_driver = "{ODBC Driver 18 for SQL Server}"
+        self.fabric_mid_id = os.getenv("FABRIC_SQLDB_USER_MID")
+
         # SQL Database configuration
         self.sqldb_database = os.getenv("SQLDB_DATABASE")
         self.sqldb_server = os.getenv("SQLDB_SERVER")
