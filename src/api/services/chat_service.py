@@ -28,6 +28,7 @@ from cachetools import TTLCache
 from helpers.utils import format_stream_response
 from common.config.config import Config
 from agents.chart_agent_factory import ChartAgentFactory
+from common.database.sqldb_service import adjust_processed_data_dates
 
 # Constants
 HOST_NAME = "CKM"
@@ -281,3 +282,7 @@ class ChatService:
             "created": int(time.time()),
             "object": chart_data,
         }
+
+    async def adjust_processed_data_dates(self):
+        await adjust_processed_data_dates()
+

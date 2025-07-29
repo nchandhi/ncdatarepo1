@@ -8,7 +8,7 @@ from common.logging.event_utils import track_event_if_configured
 from azure.monitor.opentelemetry import configure_azure_monitor
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
-
+from services.chat_service import ChatService
 router = APIRouter()
 
 # Configure logging
@@ -229,6 +229,8 @@ async def list_conversations(
     limit: int = Query(25, alias="limit")
 ):
     try:
+        chat_service_instance = ChatService(request=request)
+        chat_service_instance.adjust_processed_data_dates()
         authenticated_user = get_authenticated_user_details(
             request_headers=request.headers)
         user_id = authenticated_user["user_principal_id"]
