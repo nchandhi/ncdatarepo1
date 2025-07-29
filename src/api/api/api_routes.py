@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 import requests
 # from api.models.input_models import ChartFilters
-# from services.chat_service import ChatService
+from services.chat_service import ChatService
 # from services.chart_service import ChartService
 from common.logging.event_utils import track_event_if_configured
 from azure.monitor.opentelemetry import configure_azure_monitor
@@ -84,7 +84,7 @@ async def conversation(request: Request):
 
 
 @router.get("/layout-config")
-async def get_layout_config(request: Request):
+async def get_layout_config():
     layout_config_str = os.getenv("REACT_APP_LAYOUT_CONFIG", "")
     if layout_config_str:
         try:
