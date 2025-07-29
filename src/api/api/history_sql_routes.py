@@ -42,9 +42,8 @@ logging.getLogger("azure.monitor.opentelemetry.exporter.export._base").setLevel(
 # Single instance of HistoryService (if applicable)
 history_service = HistorySqlService()
 
-
-@router.get("/list_table_data")
-async def list_table_data(
+@router.get("/list")
+async def list_conversations(
     request: Request,
     offset: int = Query(0, alias="offset"),
     limit: int = Query(25, alias="limit")
@@ -56,71 +55,81 @@ async def list_table_data(
 
         logger.info(f"user_id: {user_id}, offset: {offset}, limit: {limit}")
 
-        # Get table data
-        table_data = await history_service.get_table_data(user_id=user_id, offset=offset, limit=limit)
-
+        # Get conversations
+        conversations = await history_service.get_conversations(user_id, offset=offset, limit=limit)
+        
         if user_id is not None:
-            if not isinstance(table_data, list):
-                track_event_if_configured("ListTableDataNotFound", {
+            if not isinstance(conversations, list):
+                track_event_if_configured("ListConversationsNotFound", {
                     "user_id": user_id,
                     "offset": offset,
                     "limit": limit
                 })
                 return JSONResponse(
                     content={
-                        "error": f"No table data for {user_id} were found"},
+                        "error": f"No conversations for {user_id} were found"},
                     status_code=404)
-            track_event_if_configured("TableDataListed", {
+            track_event_if_configured("ConversationsListed", {
                 "user_id": user_id,
                 "offset": offset,
                 "limit": limit,
-                "table_data_count": len(table_data)
+                "conversation_count": len(conversations)
             })
-        logging.info("AVJ-FABRIC-API-RESULT: %s" % table_data)
-        return JSONResponse(content=table_data, status_code=200)
+        return JSONResponse(content=conversations, status_code=200)
 
     except Exception as e:
-        logger.exception("Exception in /historysql/list_table_data: %s", str(e))
+        logger.exception("Exception in /historyfab/list: %s", str(e))
         span = trace.get_current_span()
         if span is not None:
             span.record_exception(e)
             span.set_status(Status(StatusCode.ERROR, str(e)))
         return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)
 
-@router.get("/history/ensure")
-async def ensure_cosmos():
-    try:
-        success, err = await history_service.ensure_cosmos()
-        if not success:
-            track_event_if_configured("CosmosDBEnsureFailed", {
-                "error": err or "Unknown error occurred"
-            })
-            return JSONResponse(
-                content={
-                    "error": err or "Unknown error occurred"},
-                status_code=422)
-        track_event_if_configured("CosmosDBEnsureSuccess", {
-            "status": "CosmosDB is configured and working"
-        })
 
+@router.get("/read")
+async def get_conversation_messages(request: Request, id: str = Query(...)):
+    try:
+        authenticated_user = get_authenticated_user_details(
+            request_headers=request.headers)
+        user_id = authenticated_user["user_principal_id"]
+       
+        conversation_id = id
+
+        if not conversation_id:
+            track_event_if_configured("ReadConversationValidationError", {
+                "error": "conversation_id is required",
+                "user_id": user_id
+            })
+            raise HTTPException(status_code=400, detail="conversation_id is required")
+
+        # Get conversation details
+        conversationMessages = await history_service.get_conversation_messages(user_id, conversation_id)
+        if user_id is not None:
+            if not conversationMessages:
+                track_event_if_configured("ReadConversationNotFound", {
+                    "user_id": user_id,
+                    "conversation_id": conversation_id
+                })
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Conversation {conversation_id} was not found. It either does not exist or the user does not have access to it."
+                )
+            track_event_if_configured("ConversationRead", {
+                "user_id": user_id,
+                "conversation_id": conversation_id,
+                "message_count": len(conversationMessages)
+            })
+       
         return JSONResponse(
             content={
-                "message": "CosmosDB is configured and working"},
+                "conversation_id": conversation_id,
+                "messages": conversationMessages},
             status_code=200)
+
     except Exception as e:
-        logger.exception("Exception in /history/ensure: %s", str(e))
+        logger.exception("Exception in /historyfab/read: %s", str(e))
         span = trace.get_current_span()
         if span is not None:
             span.record_exception(e)
             span.set_status(Status(StatusCode.ERROR, str(e)))
-        cosmos_exception = str(e)
-
-        if "Invalid credentials" in cosmos_exception:
-            return JSONResponse(content={"error": "Invalid credentials"}, status_code=401)
-        elif "Invalid CosmosDB database name" in cosmos_exception or "Invalid CosmosDB container name" in cosmos_exception:
-            return JSONResponse(content={"error": "Invalid CosmosDB configuration"}, status_code=422)
-        else:
-            return JSONResponse(
-                content={
-                    "error": "CosmosDB is not configured or not working"},
-                status_code=500)
+        return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)

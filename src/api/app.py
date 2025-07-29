@@ -69,7 +69,7 @@ def build_app() -> FastAPI:
     # Include routers
     fastapi_app.include_router(backend_router, prefix="/api", tags=["backend"])
     fastapi_app.include_router(history_router, prefix="/history", tags=["history"])
-    fastapi_app.include_router(history_sql_router, prefix="/historysql", tags=["historysql"])
+    fastapi_app.include_router(history_sql_router, prefix="/historyfab", tags=["historyfab"])
 
     @fastapi_app.get("/health")
     async def health_check():
