@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 import requests
 # from api.models.input_models import ChartFilters
-from services.chat_service import ChatService
+# from services.chat_service import ChatService
 # from services.chart_service import ChartService
 from common.logging.event_utils import track_event_if_configured
 from azure.monitor.opentelemetry import configure_azure_monitor
@@ -88,8 +88,8 @@ async def get_layout_config(request: Request):
     layout_config_str = os.getenv("REACT_APP_LAYOUT_CONFIG", "")
     if layout_config_str:
         try:
-            chat_service = ChatService(request=request)
-            chat_service.adjust_processed_data_dates()
+            # chat_service = ChatService(request=request)
+            # chat_service.adjust_processed_data_dates()
             layout_config_json = json.loads(layout_config_str)
             track_event_if_configured("LayoutConfigFetched", {"status": "success"})  # Parse the string into JSON
             return JSONResponse(content=layout_config_json)    # Return the parsed JSON
