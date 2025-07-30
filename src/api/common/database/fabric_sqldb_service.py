@@ -22,14 +22,6 @@ async def get_fabric_db_connection():
     driver = config.fabric_driver
     mid_id = config.fabric_mid_id
 
-    # server = config.sqldb_server
-    # database = config.sqldb_database
-    # username = config.sqldb_username
-    # password = config.sqldb_database # Assuming this is a mistake in the original code, it should be `sqldb_password`
-    # driver = config.sqldb_driver
-    # mid_id = config.sqldb_mid_id
-
-
     try:
         async with DefaultAzureCredential(managed_identity_client_id=mid_id) as credential:
             token = await credential.get_token("https://database.windows.net/.default")
@@ -126,6 +118,26 @@ async def run_query_and_return_json_params(sql_query, params: Tuple[Any, ...] = 
     except Exception as e:
         logging.error("Error executing SQL query: %s", e)
         return None
+    finally:
+        if cursor:
+            cursor.close()
+        conn.close()
+
+async def run_nonquery_params(sql_query, params: Tuple[Any, ...] = ()):
+    """
+    Executes a given SQL non-query like DELETE, INSERT, UPDATE
+    """
+    conn = await get_fabric_db_connection()
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        cursor.execute(sql_query, params)
+        conn.commit()
+        logging.info("FABRIC-SQL-QUERY: %s" % sql_query)
+        return True
+    except Exception as e:
+        logging.error("Error executing SQL query: %s", e)
+        return False
     finally:
         if cursor:
             cursor.close()

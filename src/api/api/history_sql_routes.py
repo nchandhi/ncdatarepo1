@@ -1,7 +1,7 @@
 import logging
 import os
 from fastapi import APIRouter, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from auth.auth_utils import get_authenticated_user_details
 from services.history_sql_service import HistorySqlService
 from common.logging.event_utils import track_event_if_configured
@@ -57,8 +57,8 @@ async def list_conversations(
 
         # Get conversations
         conversations = await history_service.get_conversations(user_id, offset=offset, limit=limit)
-        
-        if user_id is not None:
+        logging.info("FABRIC-API-list-Conv: %s" % conversations)
+        if user_id:
             if not isinstance(conversations, list):
                 track_event_if_configured("ListConversationsNotFound", {
                     "user_id": user_id,
@@ -75,8 +75,8 @@ async def list_conversations(
                 "limit": limit,
                 "conversation_count": len(conversations)
             })
-        return JSONResponse(content=conversations, status_code=200)
 
+        return Response(content=conversations, media_type="application/json", status_code=200)
     except Exception as e:
         logger.exception("Exception in /historyfab/list: %s", str(e))
         span = trace.get_current_span()
@@ -96,15 +96,16 @@ async def get_conversation_messages(request: Request, id: str = Query(...)):
         conversation_id = id
 
         if not conversation_id:
-            track_event_if_configured("ReadConversationValidationError", {
-                "error": "conversation_id is required",
-                "user_id": user_id
-            })
+            if user_id:
+                track_event_if_configured("ReadConversationValidationError", {
+                    "error": "conversation_id is required",
+                    "user_id": user_id
+                })
             raise HTTPException(status_code=400, detail="conversation_id is required")
 
         # Get conversation details
         conversationMessages = await history_service.get_conversation_messages(user_id, conversation_id)
-        if user_id is not None:
+        if user_id:
             if not conversationMessages:
                 track_event_if_configured("ReadConversationNotFound", {
                     "user_id": user_id,
@@ -133,3 +134,226 @@ async def get_conversation_messages(request: Request, id: str = Query(...)):
             span.record_exception(e)
             span.set_status(Status(StatusCode.ERROR, str(e)))
         return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)
+    
+@router.delete("/delete")
+async def delete_conversation(request: Request, id: str = Query(...)):
+    try:
+        # Get the user ID from request headers
+        authenticated_user = get_authenticated_user_details(
+            request_headers=request.headers)
+        user_id = authenticated_user["user_principal_id"]
+        # Parse request body
+        # request_json = await request.json()
+        # conversation_id = request_json.get("conversation_id")
+        conversation_id = id
+        if not conversation_id:
+            track_event_if_configured("DeleteConversationValidationError", {
+                "error": "conversation_id is missing",
+                "user_id": user_id
+            })
+            raise HTTPException(status_code=400, detail="conversation_id is required")
+
+        # Delete conversation using HistoryService
+        deleted = await history_service.delete_conversation(user_id, conversation_id)
+        if deleted:
+            if user_id:
+                track_event_if_configured("ConversationDeleted", {
+                    "user_id": user_id,
+                    "conversation_id": conversation_id
+                })
+            return JSONResponse(
+                content={
+                    "message": "Successfully deleted conversation and messages",
+                    "conversation_id": conversation_id},
+                status_code=200,
+            )
+        else:
+            if user_id:
+                track_event_if_configured("DeleteConversationNotFound", {
+                    "user_id": user_id,
+                    "conversation_id": conversation_id
+                })
+            raise HTTPException(
+                status_code=404,
+                detail=f"Conversation {conversation_id} not found or user does not have permission.")
+    except Exception as e:
+        logger.exception("Exception in /historyfab/delete: %s", str(e))
+        span = trace.get_current_span()
+        if span is not None:
+            span.record_exception(e)
+            span.set_status(Status(StatusCode.ERROR, str(e)))
+        return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)
+    
+@router.delete("/delete_all")
+async def delete_all_conversations(request: Request):
+    try:
+        # Get the user ID from request headers
+        authenticated_user = get_authenticated_user_details(
+            request_headers=request.headers)
+        user_id = authenticated_user["user_principal_id"]
+
+        # Get all user conversations
+        conversations = await history_service.get_conversations(user_id, offset=0, limit=None)
+        if not conversations:
+            track_event_if_configured("DeleteAllConversationsNotFound", {
+                "user_id": user_id
+            })
+            raise HTTPException(status_code=404,
+                                detail=f"No conversations for {user_id} were found")
+
+        # Delete all conversations
+        deleted = await history_service.delete_all_conversations(user_id)
+        if deleted:
+            if user_id:
+                track_event_if_configured("AllConversationsDeleted", {
+                    "user_id": user_id,
+                    "deleted_count": len(conversations)
+                }) 
+            return JSONResponse(
+                content={
+                    "message": f"Successfully deleted all conversations for user {user_id}"},
+                status_code=200,
+            )
+        else:
+            if user_id:
+                track_event_if_configured("DeleteAllConversationsNotFound", {
+                    "user_id": user_id
+                })
+            raise HTTPException(
+                status_code=404,
+                detail=f"Conversation not found for user {user_id}")
+    except Exception as e:
+        logging.exception("Exception in /historyfab/delete_all: %s", str(e))
+        span = trace.get_current_span()
+        if span is not None:
+            span.record_exception(e)
+            span.set_status(Status(StatusCode.ERROR, str(e)))
+        return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)
+    
+@router.post("/rename")
+async def rename_conversation(request: Request):
+    try:
+        authenticated_user = get_authenticated_user_details(
+            request_headers=request.headers)
+        user_id = authenticated_user["user_principal_id"]
+
+        # Parse request body
+        request_json = await request.json()
+        conversation_id = request_json.get("conversation_id")
+        title = request_json.get("title")
+
+        if user_id:
+            if not conversation_id:
+                track_event_if_configured("RenameConversationValidationError", {
+                    "error": "conversation_id is required",
+                    "user_id": user_id
+                })
+                raise HTTPException(status_code=400, detail="conversation_id is required")
+            if not title:
+                track_event_if_configured("RenameConversationValidationError", {
+                    "error": "title is required",
+                    "user_id": user_id
+                })
+                raise HTTPException(status_code=400, detail="title is required")
+
+        rename_conversation = await history_service.rename_conversation(user_id, conversation_id, title)
+
+        if rename_conversation:
+            if user_id:
+                track_event_if_configured("ConversationRenamedTitle", {
+                    "user_id": user_id,
+                    "conversation_id": conversation_id,
+                    "new_title": title
+                }) 
+            return JSONResponse(
+                content={
+                    "message": f"Successfully renamed title of conversation {conversation_id} to title '{title}'"},
+                status_code=200,
+            )
+        else:
+            if user_id:
+                track_event_if_configured("ConversationRenamedTitleNotFound", {
+                    "user_id": user_id,
+                    "conversation_id": conversation_id,
+                    "new_title": title
+                })
+            raise HTTPException(
+                status_code=404,
+                detail=f"Conversation {conversation_id} not found or user does not have permission.")
+
+    except Exception as e:
+        logger.exception("Exception in /historyfab/rename: %s", str(e))
+        span = trace.get_current_span()
+        if span is not None:
+            span.record_exception(e)
+            span.set_status(Status(StatusCode.ERROR, str(e)))
+        return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)
+    
+@router.post("/update")
+async def update_conversation(request: Request):
+    try:
+        authenticated_user = get_authenticated_user_details(
+            request_headers=request.headers)
+        user_id = authenticated_user["user_principal_id"]
+
+        # Parse request body
+        request_json = await request.json()
+        conversation_id = request_json.get("conversation_id")
+
+        if not conversation_id:
+            raise HTTPException(status_code=400, detail="No conversation_id found")
+
+        # Call HistoryService to update conversation
+        update_response = await history_service.update_conversation(user_id, request_json)
+
+        if not update_response:
+            raise HTTPException(status_code=500, detail="Failed to update conversation")
+        track_event_if_configured("ConversationUpdated", {
+            "user_id": user_id,
+            "conversation_id": conversation_id,
+            "title": update_response["title"]
+        })
+
+        return JSONResponse(
+            content={
+                "success": True,
+                "data": {
+                    "title": update_response["title"],
+                    "date": update_response["updatedAt"],
+                    "conversation_id": update_response["id"],
+                },
+            },
+            status_code=200,
+        )
+    except Exception as e:
+        logger.exception("Exception in /history/update: %s", str(e))
+        span = trace.get_current_span()
+        if span is not None:
+            span.record_exception(e)
+            span.set_status(Status(StatusCode.ERROR, str(e)))
+        return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)
+    
+# @router.post("/generate")
+# async def add_conversation(request: Request):
+#     try:
+#         authenticated_user = get_authenticated_user_details(
+#             request_headers=request.headers)
+#         user_id = authenticated_user["user_principal_id"]
+
+#         # Parse request body
+#         request_json = await request.json()
+
+#         response = await history_service.add_conversation(user_id, request_json)
+#         track_event_if_configured("ConversationCreated", {
+#             "user_id": user_id,
+#             "request": request_json,
+#         })
+#         return response
+
+#     except Exception as e:
+#         logger.exception("Exception in /generate: %s", str(e))
+#         span = trace.get_current_span()
+#         if span is not None:
+#             span.record_exception(e)
+#             span.set_status(Status(StatusCode.ERROR, str(e)))
+#         return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)
