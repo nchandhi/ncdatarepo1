@@ -48,11 +48,8 @@ function getUserIdFromLocalStorage(): string | null {
 
 export const historyRead = async (convId: string): Promise<ChatMessage[]> => {
   const userId = getUserIdFromLocalStorage();
-  const response = await fetch(`${baseURL}/history/read`, {
-    method: "POST",
-    body: JSON.stringify({
-      conversation_id: convId,
-    }),
+  const response = await fetch(`${baseURL}/historyfab/read?id=${encodeURIComponent(convId)}`, {
+    method: "GET",
     headers: {
       "Content-Type": "application/json",
       "X-Ms-Client-Principal-Id": userId || "",
@@ -60,6 +57,7 @@ export const historyRead = async (convId: string): Promise<ChatMessage[]> => {
   })
     .then(async (res) => {
       if (!res.ok) {
+        console.error(`Error ${res.status}: ${res.statusText}`);
         return historyReadResponse.messages.map((msg: any) => ({
           id: msg.id,
           role: msg.role,
@@ -90,25 +88,44 @@ export const historyRead = async (convId: string): Promise<ChatMessage[]> => {
       }
       return messages;
     })
-    .catch((_err) => {
-      console.error("There was an issue fetching your data.");
+    .catch((err) => {
+      console.error("There was an issue fetching your data:", err);
       return [];
     });
   return response;
 };
 
 export const historyList = async (
-  offset = 0
+  offset = 0,
+  limit = 25
 ): Promise<Conversation[] | null> => {
   const userId = getUserIdFromLocalStorage();
-  let response = await fetch(`${baseURL}/history/list?offset=${offset}`, {
+  let response = await fetch(`${baseURL}/historyfab/list?offset=${offset}&limit=${limit}`, {
     method: "GET",
-  headers: {
-    "Content-Type": "application/json",
-    "X-Ms-Client-Principal-Id": userId || "",
-  },
-})
+    headers: {
+      "Content-Type": "application/json",
+      "X-Ms-Client-Principal-Id": userId || "",
+    },
+  })
     .then(async (res) => {
+      if (!res.ok) {
+        console.error(`Error ${res.status}: ${res.statusText}`);
+        // Return fallback data if available
+        const conversations: Conversation[] = historyListResponse.map(
+          (conv: any) => {
+            const conversation: Conversation = {
+              id: conv.id,
+              title: conv.title,
+              date: conv.createdAt,
+              updatedAt: conv?.updatedAt,
+              messages: [],
+            };
+            return conversation;
+          }
+        );
+        return conversations;
+      }
+
       let payload = await res.json();
       if (!Array.isArray(payload)) {
         console.error("There was an issue fetching your data.");
@@ -126,8 +143,8 @@ export const historyList = async (
       });
       return conversations;
     })
-    .catch((_err) => {
-      console.error("There was an issue fetching your data.", _err);
+    .catch((err) => {
+      console.error("There was an issue fetching your data:", err);
       const conversations: Conversation[] = historyListResponse.map(
         (conv: any) => {
           const conversation: Conversation = {
