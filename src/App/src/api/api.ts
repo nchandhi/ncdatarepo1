@@ -108,23 +108,6 @@ export const historyList = async (
     },
   })
     .then(async (res) => {
-      if (!res.ok) {
-        console.error(`Error ${res.status}: ${res.statusText}`);
-        // Return fallback data if available
-        const conversations: Conversation[] = historyListResponse.map(
-          (conv: any) => {
-            const conversation: Conversation = {
-              id: conv.id,
-              title: conv.title,
-              date: conv.createdAt,
-              updatedAt: conv?.updatedAt,
-              messages: [],
-            };
-            return conversation;
-          }
-        );
-        return conversations;
-      }
       let payload = await res.json();
       if (!Array.isArray(payload)) {
         console.error("There was an issue fetching your data.");
