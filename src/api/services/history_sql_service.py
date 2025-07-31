@@ -7,7 +7,6 @@ from common.config.config import Config
 from common.database.cosmosdb_service import CosmosConversationClient
 from azure.identity.aio import DefaultAzureCredential, get_bearer_token_provider
 from helpers.chat_helper import complete_chat_request
-import json
 from datetime import datetime
 from common.database.fabric_sqldb_service import run_query_and_return_json_params, run_nonquery_params
 
@@ -234,10 +233,11 @@ class HistorySqlService:
             "role": input_message["role"],
             "content": input_message,
         }
-
-        if self.enable_message_feedback:
-            message["feedback"] = ""
-
+        utcNow = datetime.utcnow().isoformat()
+        # if self.enable_message_feedback:
+        #     message["feedback"] = "" 
+        # todo
+        feedback = ""
         query = (
             "INSERT INTO hst_conversation_messages ("
             "userId, "
@@ -253,17 +253,21 @@ class HistorySqlService:
             "updatedAt"
             ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
-        params = (user_id, conversation_id, role, content_id, content_date, content_role, content_text, content_citations, feedback, createdAt, updatedAt)
+        params = (user_id, conversation_id, input_message["role"], content_id, content_date, content_role, content_text, content_citations, feedback, utcNow, utcNow)
         resp = await run_nonquery_params(query, params)
 
         # resp = await self.container_client.upsert_item(message)
         if resp:
             # update the parent conversations's updatedAt field with the current message's createdAt datetime value
-            conversation = await self.get_conversation(user_id, conversation_id)
-            if not conversation:
-                return "Conversation not found"
-            conversation["updatedAt"] = message["createdAt"]
-            await self.upsert_conversation(conversation)
+            # conversation = await self.get_conversation(user_id, conversation_id)
+            # if not conversation:
+            #     return "Conversation not found"
+            # conversation["updatedAt"] = message["createdAt"]
+            # await self.upsert_conversation(conversation)
+
+            query_t = f"UPDATE hst_conversations SET updatedAt = ? WHERE conversation_id = ?"
+            resp =await run_nonquery_params(query_t, (utcNow, conversation_id))
+
             return resp
         else:
             return False
@@ -275,20 +279,20 @@ class HistorySqlService:
 
             history_metadata = {}
 
-            #AVJ if not conversation_id:
-            #     title = await self.generate_title(messages)
-            #     conversation_dict = await create_conversation(user_id, title)
-            #     conversation_id = conversation_dict["id"]
-            #     history_metadata["title"] = title
-            #     history_metadata["date"] = conversation_dict["createdAt"]
+            if not conversation_id:
+                title = await self.generate_title(messages)
+                conversation_dict = await self.create_conversation(user_id, title)
+                conversation_id = conversation_dict["id"]
+                history_metadata["title"] = title
+                history_metadata["date"] = conversation_dict["createdAt"]
 
-            # if messages and messages[-1]["role"] == "user":
-            #     created_message = await create_message(conversation_id, user_id, messages[-1])
-            #     if created_message == "Conversation not found":
-            #         raise ValueError(
-            #             f"Conversation not found for ID: {conversation_id}")
-            # else:
-            #     raise ValueError("No user message found")
+            if messages and messages[-1]["role"] == "user":
+                created_message = await self.create_message(conversation_id=conversation_id, user_id=user_id, input_message=messages[-1])
+                if not created_message:
+                    raise ValueError(
+                        f"Conversation not found for ID: {conversation_id}")
+            else:
+                raise ValueError("No user message found")
 
             request_body = {
                 "messages": messages, "history_metadata": {

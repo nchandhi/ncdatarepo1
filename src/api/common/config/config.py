@@ -18,6 +18,7 @@ class Config:
         self.fabric_sqldb_username = os.getenv("FABRIC_SQLDB_USERNAME")
         self.fabric_driver = "{ODBC Driver 18 for SQL Server}"
         self.fabric_mid_id = os.getenv("FABRIC_SQLDB_USER_MID")
+        self.fabric_sqldb_connection_string = os.getenv("FABRIC_SQLDB_CONNECTION_STRING", "")
 
         # SQL Database configuration
         self.sqldb_database = os.getenv("SQLDB_DATABASE")
@@ -51,3 +52,4 @@ class Config:
         self.azure_cosmosdb_enable_feedback = os.getenv("AZURE_COSMOSDB_ENABLE_FEEDBACK", "false").lower() == "true"
 
         self.solution_name = os.getenv("SOLUTION_NAME", "")
+        self.app_env = os.getenv("APP_ENV", "prod").lower()

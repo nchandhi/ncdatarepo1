@@ -21,6 +21,8 @@ async def get_fabric_db_connection():
     password = config.fabric_sqldb_database # Assuming this is a mistake in the original code, it should be `fabric_sqldb_password`
     driver = config.fabric_driver
     mid_id = config.fabric_mid_id
+    fabric_sqldb_connection_string = config.fabric_sqldb_connection_string
+    app_env = config.app_env
 
     try:
         async with DefaultAzureCredential(managed_identity_client_id=mid_id) as credential:
@@ -35,7 +37,12 @@ async def get_fabric_db_connection():
             SQL_COPT_SS_ACCESS_TOKEN = 1256
 
             # Set up the connection
-            connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};"
+            connection_string = ""
+            if app_env == 'dev':
+                connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};"
+            else:
+                connection_string = fabric_sqldb_connection_string
+            # connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};"
             conn = pyodbc.connect(
                 connection_string, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct}
             )

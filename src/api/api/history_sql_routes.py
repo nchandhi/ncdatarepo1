@@ -121,11 +121,13 @@ async def get_conversation_messages(request: Request, id: str = Query(...)):
                 "message_count": len(conversationMessages)
             })
        
-        return JSONResponse(
-            content={
-                "conversation_id": conversation_id,
-                "messages": conversationMessages},
-            status_code=200)
+        return Response(content=conversationMessages, media_type="application/json", status_code=200)
+    
+        # return JSONResponse(
+        #     content={
+        #         "conversation_id": conversation_id,
+        #         "messages": conversationMessages},
+        #     status_code=200)
 
     except Exception as e:
         logger.exception("Exception in /historyfab/read: %s", str(e))
