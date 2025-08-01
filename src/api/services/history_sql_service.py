@@ -8,7 +8,7 @@ from common.database.cosmosdb_service import CosmosConversationClient
 from azure.identity.aio import DefaultAzureCredential, get_bearer_token_provider
 from helpers.chat_helper import complete_chat_request
 from datetime import datetime
-from common.database.fabric_sqldb_service import run_query_and_return_json_params, run_nonquery_params
+from common.database.fabric_sqldb_service import run_query_and_return_json_params, run_nonquery_params, run_query_params
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -49,13 +49,13 @@ class HistorySqlService:
             query = ""
             params = ()
             if user_id:
-                query = f"SELECT role, content_role, content_text, content_citations, feedback FROM hst_conversation_messages where userId = ? and conversation_id = ?"
+                query = f"SELECT role, content, citations, feedback FROM hst_conversation_messages where userId = ? and conversation_id = ?"
                 params = (user_id, conversation_id)
             else:
-                query = f"SELECT role, content_role, content_text, content_citations, feedback FROM hst_conversation_messages where conversation_id = ?"
+                query = f"SELECT role, content, citations, feedback FROM hst_conversation_messages where conversation_id = ?"
                 params = (conversation_id,)
 
-            result = await run_query_and_return_json_params(query, params)   
+            result = await run_query_params(query, params)   
 
             return result               
             
@@ -215,62 +215,92 @@ class HistorySqlService:
             return messages[-2]["content"]
 
     async def create_conversation( self, user_id, title="", conversation_id=str(uuid.uuid4())):
-        # utcNow = datetime.now(datetime.timezone.utc).isoformat()
-        utcNow = datetime.utcnow().isoformat()
-        query = f"INSERT INTO hst_conversations (userId, conversation_id, title, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)"
-        params = (user_id, conversation_id, title, utcNow, utcNow)
-        resp = await run_nonquery_params(query, params)
-        return resp
+        try:
+            if not user_id:
+                logger.warning(f"No User ID found, cannot create conversation.")
+                return None
+
+            # Check if conversation already exists
+            query = f"SELECT * FROM hst_conversations where userId = ?  and conversation_id = ?"
+            existing_conversation = await run_query_and_return_json_params(query, (user_id, conversation_id))
+            if existing_conversation:
+                logger.info(f"Conversation with ID {conversation_id} already exists.")
+                return existing_conversation
+            
+            # utcNow = datetime.now(datetime.timezone.utc).isoformat()
+            utcNow = datetime.utcnow().isoformat()
+            query = f"INSERT INTO hst_conversations (userId, conversation_id, title, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)"
+            params = (user_id, conversation_id, title, utcNow, utcNow)
+            resp = await run_nonquery_params(query, params)
+            logger.info("Created conversation with ID: %s", conversation_id)
+            return resp
+        except Exception:
+            logger.exception("Error in create_conversation")
+            raise  
             
     async def create_message(self, uuid, conversation_id, user_id, input_message: dict):
-        message = {
-            "id": uuid,
-            "type": "message",
-            "userId": user_id,
-            "createdAt": datetime.utcnow().isoformat(),
-            "updatedAt": datetime.utcnow().isoformat(),
-            "conversationId": conversation_id,
-            "role": input_message["role"],
-            "content": input_message,
-        }
-        utcNow = datetime.utcnow().isoformat()
-        # if self.enable_message_feedback:
-        #     message["feedback"] = "" 
-        # todo
-        feedback = ""
-        query = (
-            "INSERT INTO hst_conversation_messages ("
-            "userId, "
-            "conversation_id, "
-            "role, "
-            "content_id, "
-            "content_date, "
-            "content_role, "
-            "content_text, "
-            "content_citations, "
-            "feedback, "
-            "createdAt, "
-            "updatedAt"
-            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        )
-        params = (user_id, conversation_id, input_message["role"], content_id, content_date, content_role, content_text, content_citations, feedback, utcNow, utcNow)
-        resp = await run_nonquery_params(query, params)
+        try:
+            if not user_id:
+                logger.warning(f"No User ID found, cannot create message.")
+                return None
 
-        # resp = await self.container_client.upsert_item(message)
-        if resp:
-            # update the parent conversations's updatedAt field with the current message's createdAt datetime value
-            # conversation = await self.get_conversation(user_id, conversation_id)
-            # if not conversation:
-            #     return "Conversation not found"
-            # conversation["updatedAt"] = message["createdAt"]
-            # await self.upsert_conversation(conversation)
+            if not conversation_id:
+                logger.warning(f"No conversation_id found, cannot create message.")
+                return None
+            
+            # Ensure the conversation exists
+            query = f"SELECT * FROM hst_conversations where conversation_id = ?"
+            conversation = await run_query_and_return_json_params(query, (conversation_id,))
+            if not conversation:
+                logger.error(f"Conversation not found for ID: {conversation_id}")
+                return None
+            
+            logger.info(f"FABRIC-UPDATED-create_message-conversation_id: {conversation_id}")
+            # message = {
+            #     "id": uuid,
+            #     "type": "message",
+            #     "userId": user_id,
+            #     "createdAt": datetime.utcnow().isoformat(),
+            #     "updatedAt": datetime.utcnow().isoformat(),
+            #     "conversationId": conversation_id,
+            #     "role": input_message["role"],
+            #     "content": input_message,
+            # }
+            utcNow = datetime.utcnow().isoformat()
+            # if self.enable_message_feedback:
+            #     message["feedback"] = "" 
+            # todo
+            feedback = ""
+            query = (
+                "INSERT INTO hst_conversation_messages ("
+                "userId, "
+                "conversation_id, "
+                "role, "
+                "content_id, "
+                "content, "
+                "citations, "
+                "feedback, "
+                "createdAt, "
+                "updatedAt"
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            )
+            params = (user_id, conversation_id, input_message["role"], input_message["id"],
+                      input_message["content"], "", feedback, utcNow, utcNow)
+            resp = await run_nonquery_params(query, params)
+            logger.info("FABRIC-Created conversation status: %s, conversation_id: %s, message ID: %s, Content: %s",
+                        resp, conversation_id, input_message["id"], input_message["content"])
+            # resp = await self.container_client.upsert_item(message)
+            if resp:
+                # Update the conversation's updatedAt timestamp
+                query_t = f"UPDATE hst_conversations SET updatedAt = ? WHERE conversation_id = ?"
+                resp =await run_nonquery_params(query_t, (utcNow, conversation_id))
 
-            query_t = f"UPDATE hst_conversations SET updatedAt = ? WHERE conversation_id = ?"
-            resp =await run_nonquery_params(query_t, (utcNow, conversation_id))
-
-            return resp
-        else:
-            return False
+                return resp
+            else:
+                return False
+        except Exception:
+            logger.exception("Error in create_message")
+            raise  
             
     async def add_conversation(self, user_id: str, request_json: dict):
         try:
@@ -301,3 +331,91 @@ class HistorySqlService:
         except Exception:
             logger.exception("Error in add_conversation")
             raise  
+
+    async def update_conversation(self, user_id: str, request_json: dict):
+        try:
+            conversation_id = request_json.get("conversation_id")
+            messages = request_json.get("messages", [])
+
+            if not user_id:
+                logger.warning(f"No User ID found, cannot update conversation.")
+                return None
+
+            # conversation = None 
+            query = f"SELECT * FROM hst_conversations where conversation_id = ?"
+            conversation = await run_query_and_return_json_params(query, (conversation_id,))
+
+            logger.info(f"FABRIC-UPDATED-Retrieved conversation: {conversation}")
+            # if not conversation or (isinstance(conversation, list) and len(conversation) == 0):
+            # if conversation is None or conversation == []:
+            if conversation == "":
+                title = await self.generate_title(messages)
+                logger.info(f"FABRIC-UPDATED-title: {title}")
+                conversation = await self.create_conversation(user_id=user_id, title=title)
+                logger.info(f"FABRIC-UPDATED-created conversation: {conversation}")
+            
+            # Format the incoming message object in the "chat/completions" messages format then write it to the
+            # conversation history 
+            logger.info(f"FABRIC-UPDATED-conversation_id before creating message: {conversation_id}")
+            messages = request_json["messages"]
+            if len(messages) > 0 and messages[0]["role"] == "user":
+                user_message = next(
+                    (
+                        message
+                        for message in reversed(messages)
+                        if message["role"] == "user"
+                    ),
+                    None,
+                )
+                createdMessageValue = await self.create_message(
+                    uuid=str(uuid.uuid4()),
+                    conversation_id=conversation_id,
+                    user_id=user_id,
+                    input_message=user_message,
+                )
+                # if createdMessageValue == "Conversation not found":
+                if not createdMessageValue:
+                    logger.error(f"Conversation not found for ID: {conversation_id}")
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Conversation not found")
+            else:
+                logger.error("No user message found in request")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="User message not found")
+
+            # Format the incoming message object in the "chat/completions" messages format
+            # then write it to the conversation history
+            messages = request_json["messages"]
+            if len(messages) > 0 and messages[-1]["role"] == "assistant":
+                if len(messages) > 1 and messages[-2].get("role", None) == "tool":
+                    # write the tool message first
+                    await self.create_message(
+                        uuid=str(uuid.uuid4()),
+                        conversation_id=conversation_id,
+                        user_id=user_id,
+                        input_message=messages[-2],
+                    )
+                # write the assistant message
+                await self.create_message(
+                    uuid=messages[-1]["id"],
+                    conversation_id=conversation_id,
+                    user_id=user_id,
+                    input_message=messages[-1],
+                )
+            else:
+                logger.error("No assistant message found in request")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Assistant message not found")                
+            
+            queryReturn = f"SELECT * FROM hst_conversations where conversation_id = ?"
+            conversationUpdated = await run_query_and_return_json_params(queryReturn, (conversation_id,))
+            return {
+                "id": conversation_id,
+                "title": conversationUpdated["title"],
+                "updatedAt": conversationUpdated.get("updatedAt")}
+        except Exception:
+            logger.exception("Error in update_conversation")
+            raise

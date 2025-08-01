@@ -117,10 +117,9 @@ async def run_query_and_return_json_params(sql_query, params: Tuple[Any, ...] = 
                     row_dict[col_name] = value
             result.append(row_dict)
 
-        logging.info("FABRIC-SQL-Param-JSON-QUERY: %s" % sql_query)
-        logging.info("FABRIC-SQL-Param-JSON-RESULT: %s" % result)
-
-        # Return JSON string
+        logging.info("FABRIC-SQLDBService-Param-JSON-QUERY: %s" % sql_query)
+        logging.info("FABRIC-SQLDBService-Param-JSON-RESULT: %s" % result)
+           
         return json.dumps(result, indent=2)
     except Exception as e:
         logging.error("Error executing SQL query: %s", e)
@@ -145,6 +144,41 @@ async def run_nonquery_params(sql_query, params: Tuple[Any, ...] = ()):
     except Exception as e:
         logging.error("Error executing SQL query: %s", e)
         return False
+    finally:
+        if cursor:
+            cursor.close()
+        conn.close()
+
+async def run_query_params(sql_query, params: Tuple[Any, ...] = ()):
+    # Connect to the database    
+    conn = await get_fabric_db_connection()
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        cursor.execute(sql_query, params)
+
+        # Extract column names
+        columns = [desc[0] for desc in cursor.description]
+
+        # Fetch and convert rows to list of dicts
+        result = []
+        for row in cursor.fetchall():
+            row_dict = {}
+            for col_name, value in zip(columns, row):
+                # Convert datetime/date to ISO format for JSON
+                if isinstance(value, (datetime, date)):
+                    row_dict[col_name] = value.isoformat()
+                else:
+                    row_dict[col_name] = value
+            result.append(row_dict)
+
+        logging.info("FABRIC-SQLDBService-Param-QUERY: %s" % sql_query)
+        logging.info("FABRIC-SQLDBService-Param-RESULT: %s" % result)
+            
+        return result
+    except Exception as e:
+        logging.error("Error executing SQL query: %s", e)
+        return None
     finally:
         if cursor:
             cursor.close()
