@@ -370,7 +370,7 @@ async def update_conversation(request: Request):
         # Parse request body
         request_json = await request.json()
         conversation_id = request_json.get("conversation_id")
-        logging.info("AVJ-FABRIC-fab-update_conversation-request_json: %s" % request_json)
+        # logging.info("FABRIC-fab-update_conversation-request_json: %s" % request_json)
         if not conversation_id:
             raise HTTPException(status_code=400, detail="No conversation_id found")
 

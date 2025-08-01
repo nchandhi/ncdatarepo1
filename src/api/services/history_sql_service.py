@@ -214,16 +214,22 @@ class HistorySqlService:
             logger.error("Error generating title")
             return messages[-2]["content"]
 
-    async def create_conversation( self, user_id, title="", conversation_id=str(uuid.uuid4())):
+    async def create_conversation( self, user_id, title="", conversation_id=None):
         try:
+            logger.info(f"FABRIC-create_conversation: user {user_id} with title '{title}' and conversation_id '{conversation_id}'")
+
             if not user_id:
                 logger.warning(f"No User ID found, cannot create conversation.")
                 return None
 
+            if not conversation_id:
+                logger.warning(f"No conversation_id found, generating a new one.")
+                conversation_id = str(uuid.uuid4())
+
             # Check if conversation already exists
-            query = f"SELECT * FROM hst_conversations where userId = ?  and conversation_id = ?"
-            existing_conversation = await run_query_and_return_json_params(query, (user_id, conversation_id))
-            if existing_conversation:
+            query = f"SELECT * FROM hst_conversations where conversation_id = ?"
+            existing_conversation = await run_query_params(query, (conversation_id,))
+            if existing_conversation and len(existing_conversation) > 0:
                 logger.info(f"Conversation with ID {conversation_id} already exists.")
                 return existing_conversation
             
@@ -240,6 +246,7 @@ class HistorySqlService:
             
     async def create_message(self, uuid, conversation_id, user_id, input_message: dict):
         try:
+            logger.info(f"FABRIC-create_message: user {user_id} with conversation_id '{conversation_id}' and input_message: {input_message}")
             if not user_id:
                 logger.warning(f"No User ID found, cannot create message.")
                 return None
@@ -256,16 +263,7 @@ class HistorySqlService:
                 return None
             
             logger.info(f"FABRIC-UPDATED-create_message-conversation_id: {conversation_id}")
-            # message = {
-            #     "id": uuid,
-            #     "type": "message",
-            #     "userId": user_id,
-            #     "createdAt": datetime.utcnow().isoformat(),
-            #     "updatedAt": datetime.utcnow().isoformat(),
-            #     "conversationId": conversation_id,
-            #     "role": input_message["role"],
-            #     "content": input_message,
-            # }
+           
             utcNow = datetime.utcnow().isoformat()
             # if self.enable_message_feedback:
             #     message["feedback"] = "" 
@@ -282,7 +280,7 @@ class HistorySqlService:
                 "feedback, "
                 "createdAt, "
                 "updatedAt"
-                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
             )
             params = (user_id, conversation_id, input_message["role"], input_message["id"],
                       input_message["content"], "", feedback, utcNow, utcNow)
@@ -302,35 +300,35 @@ class HistorySqlService:
             logger.exception("Error in create_message")
             raise  
             
-    async def add_conversation(self, user_id: str, request_json: dict):
-        try:
-            conversation_id = request_json.get("conversation_id")
-            messages = request_json.get("messages", [])
+    # async def add_conversation(self, user_id: str, request_json: dict):
+    #     try:
+    #         conversation_id = request_json.get("conversation_id")
+    #         messages = request_json.get("messages", [])
 
-            history_metadata = {}
+    #         history_metadata = {}
 
-            if not conversation_id:
-                title = await self.generate_title(messages)
-                conversation_dict = await self.create_conversation(user_id, title)
-                conversation_id = conversation_dict["id"]
-                history_metadata["title"] = title
-                history_metadata["date"] = conversation_dict["createdAt"]
+    #         if not conversation_id:
+    #             title = await self.generate_title(messages)
+    #             conversation_dict = await self.create_conversation(user_id, title)
+    #             conversation_id = conversation_dict["id"]
+    #             history_metadata["title"] = title
+    #             history_metadata["date"] = conversation_dict["createdAt"]
 
-            if messages and messages[-1]["role"] == "user":
-                created_message = await self.create_message(conversation_id=conversation_id, user_id=user_id, input_message=messages[-1])
-                if not created_message:
-                    raise ValueError(
-                        f"Conversation not found for ID: {conversation_id}")
-            else:
-                raise ValueError("No user message found")
+    #         if messages and messages[-1]["role"] == "user":
+    #             created_message = await self.create_message(conversation_id=conversation_id, user_id=user_id, input_message=messages[-1])
+    #             if not created_message:
+    #                 raise ValueError(
+    #                     f"Conversation not found for ID: {conversation_id}")
+    #         else:
+    #             raise ValueError("No user message found")
 
-            request_body = {
-                "messages": messages, "history_metadata": {
-                    "conversation_id": conversation_id}}
-            return await complete_chat_request(request_body)
-        except Exception:
-            logger.exception("Error in add_conversation")
-            raise  
+    #         request_body = {
+    #             "messages": messages, "history_metadata": {
+    #                 "conversation_id": conversation_id}}
+    #         return await complete_chat_request(request_body)
+    #     except Exception:
+    #         logger.exception("Error in add_conversation")
+    #         raise  
 
     async def update_conversation(self, user_id: str, request_json: dict):
         try:
@@ -343,20 +341,18 @@ class HistorySqlService:
 
             # conversation = None 
             query = f"SELECT * FROM hst_conversations where conversation_id = ?"
-            conversation = await run_query_and_return_json_params(query, (conversation_id,))
+            conversation = await run_query_params(query, (conversation_id,))
 
-            logger.info(f"FABRIC-UPDATED-Retrieved conversation: {conversation}")
-            # if not conversation or (isinstance(conversation, list) and len(conversation) == 0):
-            # if conversation is None or conversation == []:
-            if conversation == "":
+            # logger.info(f"FABRIC-UPDATED-Retrieved conversation: {conversation}")
+            
+            if not conversation or len(conversation) == 0:
                 title = await self.generate_title(messages)
-                logger.info(f"FABRIC-UPDATED-title: {title}")
-                conversation = await self.create_conversation(user_id=user_id, title=title)
-                logger.info(f"FABRIC-UPDATED-created conversation: {conversation}")
+                conversation = await self.create_conversation(user_id=user_id, conversation_id=conversation_id, title=title)
+                # logger.info(f"FABRIC-UPDATED-created conversation: {conversation}")
             
             # Format the incoming message object in the "chat/completions" messages format then write it to the
             # conversation history 
-            logger.info(f"FABRIC-UPDATED-conversation_id before creating message: {conversation_id}")
+            # logger.info(f"FABRIC-UPDATED-conversation_id before creating message: {conversation_id}")
             messages = request_json["messages"]
             if len(messages) > 0 and messages[0]["role"] == "user":
                 user_message = next(
@@ -411,11 +407,17 @@ class HistorySqlService:
                     detail="Assistant message not found")                
             
             queryReturn = f"SELECT * FROM hst_conversations where conversation_id = ?"
-            conversationUpdated = await run_query_and_return_json_params(queryReturn, (conversation_id,))
-            return {
-                "id": conversation_id,
-                "title": conversationUpdated["title"],
-                "updatedAt": conversationUpdated.get("updatedAt")}
+            conversationUpdated = await run_query_params(queryReturn, (conversation_id,))
+
+            logger.info(f"FABRIC-UPDATED-conversationUpdated: {conversationUpdated}")
+            if conversationUpdated and len(conversationUpdated) >0:
+                return {
+                    "id":  conversationUpdated[0].get("conversation_id"),
+                    "title": conversationUpdated[0].get("title"),
+                    "updatedAt": conversationUpdated[0].get("updatedAt")}
+            else:
+                return None
+            
         except Exception:
             logger.exception("Error in update_conversation")
             raise

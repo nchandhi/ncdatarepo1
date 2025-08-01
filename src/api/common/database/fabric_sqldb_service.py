@@ -81,8 +81,8 @@ async def run_query_and_return_json(sql_query: str):
                     row_dict[col_name] = value
             result.append(row_dict)
 
-        logging.info("AVJ-FABRIC-SQL-JSON-QUERY: %s" % sql_query)
-        logging.info("AVJ-FABRIC-SQL-JSONRESULT: %s" % result)
+        # logging.info("FABRIC-SQL-JSON-QUERY: %s" % sql_query)
+        # logging.info("FABRIC-SQL-JSONRESULT: %s" % result)
 
         # Return JSON string
         return json.dumps(result, indent=2)
@@ -117,8 +117,8 @@ async def run_query_and_return_json_params(sql_query, params: Tuple[Any, ...] = 
                     row_dict[col_name] = value
             result.append(row_dict)
 
-        logging.info("FABRIC-SQLDBService-Param-JSON-QUERY: %s" % sql_query)
-        logging.info("FABRIC-SQLDBService-Param-JSON-RESULT: %s" % result)
+        # logging.info("FABRIC-SQLDBService-Param-JSON-QUERY: %s" % sql_query)
+        # logging.info("FABRIC-SQLDBService-Param-JSON-RESULT: %s" % result)
            
         return json.dumps(result, indent=2)
     except Exception as e:
@@ -139,7 +139,9 @@ async def run_nonquery_params(sql_query, params: Tuple[Any, ...] = ()):
         cursor = conn.cursor()
         cursor.execute(sql_query, params)
         conn.commit()
-        logging.info("FABRIC-SQL-QUERY: %s" % sql_query)
+
+        # logging.info("FABRIC-SQL-QUERY: %s" % sql_query)
+
         return True
     except Exception as e:
         logging.error("Error executing SQL query: %s", e)
@@ -172,8 +174,8 @@ async def run_query_params(sql_query, params: Tuple[Any, ...] = ()):
                     row_dict[col_name] = value
             result.append(row_dict)
 
-        logging.info("FABRIC-SQLDBService-Param-QUERY: %s" % sql_query)
-        logging.info("FABRIC-SQLDBService-Param-RESULT: %s" % result)
+        # logging.info("FABRIC-SQLDBService-Param-QUERY: %s" % sql_query)
+        # logging.info("FABRIC-SQLDBService-Param-RESULT: %s" % result)
             
         return result
     except Exception as e:
