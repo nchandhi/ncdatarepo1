@@ -56,12 +56,13 @@ export const historyRead = async (convId: string): Promise<ChatMessage[]> => {
     },
   })
     .then(async (res) => {
+      console.log(res.status, res.statusText);
       if (!res.ok) {
         console.error(`Error ${res.status}: ${res.statusText}`);
         return historyReadResponse.messages.map((msg: any) => ({
           id: msg.id,
           role: msg.role,
-          content: msg.content.content,
+          content: msg.content,
           date: msg.createdAt,
           feedback: msg.feedback ?? undefined,
           context: msg.context,
@@ -76,7 +77,7 @@ export const historyRead = async (convId: string): Promise<ChatMessage[]> => {
           const message: ChatMessage = {
             id: msg.id,
             role: msg.role,
-            content: msg.content.content,
+            content: msg.content,
             date: msg.createdAt,
             feedback: msg.feedback ?? undefined,
             context: msg.context,
@@ -115,7 +116,8 @@ export const historyList = async (
       }
       const conversations: Conversation[] = payload.map((conv: any) => {
         const conversation: Conversation = {
-          id: conv.id,
+          // Use conversationId as fallback if id is not available
+          id: conv.id || conv.conversation_id,
           title: conv.title,
           date: conv.createdAt,
           updatedAt: conv?.updatedAt,
@@ -130,7 +132,8 @@ export const historyList = async (
       const conversations: Conversation[] = historyListResponse.map(
         (conv: any) => {
           const conversation: Conversation = {
-            id: conv.id,
+            // Use conversationId as fallback if id is not available
+            id: conv.id || conv.conversation_id,
             title: conv.title,
             date: conv.createdAt,
             updatedAt: conv?.updatedAt,
@@ -233,7 +236,7 @@ export const historyRename = async (
   title: string
 ): Promise<Response> => {
   const userId = getUserIdFromLocalStorage();
-  const response = await fetch(`${baseURL}/history/rename`, {
+  const response = await fetch(`${baseURL}/historyfab/rename`, {
     method: "POST",
     body: JSON.stringify({
       conversation_id: convId,
@@ -261,7 +264,7 @@ export const historyRename = async (
 
 export const historyDelete = async (convId: string): Promise<Response> => {
   const userId = getUserIdFromLocalStorage();
-  const response = await fetch(`${baseURL}/history/delete`, {
+  const response = await fetch(`${baseURL}/historyfab/delete`, {
     method: "DELETE",
     body: JSON.stringify({
       conversation_id: convId,
@@ -288,7 +291,7 @@ export const historyDelete = async (convId: string): Promise<Response> => {
 
 export const historyDeleteAll = async (): Promise<Response> => {
   const userId = getUserIdFromLocalStorage();
-  const response = await fetch(`${baseURL}/history/delete_all`, {
+  const response = await fetch(`${baseURL}/historyfab/delete_all`, {
     method: "DELETE",
     body: JSON.stringify({}),
     headers: {
@@ -313,7 +316,7 @@ export const historyDeleteAll = async (): Promise<Response> => {
 
 export const historyEnsure = async (): Promise<CosmosDBHealth> => {
   const userId = getUserIdFromLocalStorage();
-  const response = await fetch(`${baseURL}/history/ensure`, {
+  const response = await fetch(`${baseURL}/historyfab/ensure`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -375,7 +378,7 @@ export const historyGenerate = async (
     });
   }
   const userId = getUserIdFromLocalStorage();
-  const response = await fetch(`${baseURL}/history/generate`, {
+  const response = await fetch(`${baseURL}/historyfab/generate`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
