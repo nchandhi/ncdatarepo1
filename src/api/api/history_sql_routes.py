@@ -366,8 +366,7 @@ async def update_conversation(request: Request):
         authenticated_user = get_authenticated_user_details(
             request_headers=request.headers)
         user_id = authenticated_user["user_principal_id"]
-        # Ensure user_id is not None AVJ
-        user_id = "4001b5a6-87d6-4758-a7d3-8145c29b9b96"
+        
         # Parse request body
         request_json = await request.json()
         conversation_id = request_json.get("conversation_id")
