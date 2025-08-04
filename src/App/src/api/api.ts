@@ -152,7 +152,7 @@ export const historyUpdate = async (
   convId: string
 ): Promise<Response> => {
   const userId = getUserIdFromLocalStorage();
-  const response = await fetch(`${baseURL}/history/update`, {
+  const response = await fetch(`${baseURL}/historyfab/update`, {
     method: "POST",
     body: JSON.stringify({
       conversation_id: convId,
