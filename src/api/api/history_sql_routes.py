@@ -20,10 +20,10 @@ instrumentation_key = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
 if instrumentation_key:
     # Configure Application Insights if the Instrumentation Key is found
     configure_azure_monitor(connection_string=instrumentation_key)
-    logging.info("Application Insights configured with the provided Instrumentation Key")
+    logging.info("Historyfab API: Application Insights configured with the provided Instrumentation Key")
 else:
     # Log a warning if the Instrumentation Key is not found
-    logging.warning("No Application Insights Instrumentation Key found. Skipping configuration")
+    logging.warning("Historyfab API: No Application Insights Instrumentation Key found. Skipping configuration")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -53,22 +53,12 @@ async def list_conversations(
             request_headers=request.headers)
         user_id = authenticated_user["user_principal_id"]
 
-        logger.info(f"user_id: {user_id}, offset: {offset}, limit: {limit}")
+        logger.info(f"Historyfab list-API: user_id: {user_id}, offset: {offset}, limit: {limit}")
 
         # Get conversations
         conversations = await history_service.get_conversations(user_id, offset=offset, limit=limit)
-        logging.info("FABRIC-API-list-Conv: %s" % conversations)
-        if user_id:
-            if not isinstance(conversations, list):
-                track_event_if_configured("ListConversationsNotFound", {
-                    "user_id": user_id,
-                    "offset": offset,
-                    "limit": limit
-                })
-                return JSONResponse(
-                    content={
-                        "error": f"No conversations for {user_id} were found"},
-                    status_code=404)
+        # logging.info("FABRIC-API-list-Conv: %s" % conversations)
+        if user_id:            
             track_event_if_configured("ConversationsListed", {
                 "user_id": user_id,
                 "offset": offset,
@@ -76,7 +66,7 @@ async def list_conversations(
                 "conversation_count": len(conversations)
             })
 
-        return Response(content=conversations, media_type="application/json", status_code=200)
+        return JSONResponse(content=conversations, status_code=200)
     except HTTPException:
         raise
     except Exception as e:
@@ -86,7 +76,6 @@ async def list_conversations(
             span.record_exception(e)
             span.set_status(Status(StatusCode.ERROR, str(e)))
         return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)
-
 
 @router.get("/read")
 async def get_conversation_messages(request: Request, id: str = Query(...)):
@@ -105,24 +94,27 @@ async def get_conversation_messages(request: Request, id: str = Query(...)):
                 })
             raise HTTPException(status_code=400, detail="conversation_id is required")
 
-        # Get conversation details
+        # Get conversation message details
         conversationMessages = await history_service.get_conversation_messages(user_id, conversation_id)
-        if user_id:
-            if not conversationMessages:
+        logger.info(f"Historyfab read-API-conversationMessages: conversationMessages: {conversationMessages}")
+        # if not conversationMessages:
+        if not conversationMessages or len(conversationMessages) == 0:
+            if user_id:
                 track_event_if_configured("ReadConversationNotFound", {
                     "user_id": user_id,
                     "conversation_id": conversation_id
                 })
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Conversation {conversation_id} was not found. It either does not exist or the user does not have access to it."
-                )
+            raise HTTPException(
+                status_code=404,
+                detail=f"Conversation {conversation_id} was not found. It either does not exist or the user does not have access to it."
+            )
+        
+        if user_id:
             track_event_if_configured("ConversationRead", {
                 "user_id": user_id,
                 "conversation_id": conversation_id,
                 "message_count": len(conversationMessages)
-            })
-       
+            })       
         return JSONResponse(
             content={
                 "conversation_id": conversation_id,
@@ -252,20 +244,21 @@ async def rename_conversation(request: Request):
         request_json = await request.json()
         conversation_id = request_json.get("conversation_id")
         title = request_json.get("title")
-
-        if user_id:
-            if not conversation_id:
+        
+        if not conversation_id:
+            if user_id:
                 track_event_if_configured("RenameConversationValidationError", {
                     "error": "conversation_id is required",
                     "user_id": user_id
                 })
-                raise HTTPException(status_code=400, detail="conversation_id is required")
-            if not title:
+            raise HTTPException(status_code=400, detail="conversation_id is required")
+        if not title:
+            if user_id:
                 track_event_if_configured("RenameConversationValidationError", {
                     "error": "title is required",
                     "user_id": user_id
                 })
-                raise HTTPException(status_code=400, detail="title is required")
+            raise HTTPException(status_code=400, detail="title is required")
 
         rename_conversation = await history_service.rename_conversation(user_id, conversation_id, title)
 
@@ -319,12 +312,13 @@ async def update_conversation(request: Request):
         update_response = await history_service.update_conversation(user_id, request_json)
 
         if not update_response:
-            raise HTTPException(status_code=500, detail="Failed to update conversation")
-        track_event_if_configured("ConversationUpdated", {
-            "user_id": user_id,
-            "conversation_id": conversation_id,
-            "title": update_response["title"]
-        })
+            if user_id:
+                track_event_if_configured("ConversationUpdated", {
+                "user_id": user_id,
+                "conversation_id": conversation_id,
+                "title": update_response["title"]
+            })
+            raise HTTPException(status_code=500, detail="Failed to update conversation")            
 
         return JSONResponse(
             content={

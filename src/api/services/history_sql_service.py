@@ -21,18 +21,34 @@ class HistorySqlService:
         self.use_chat_history_enabled = config.use_chat_history_enabled
        
     async def get_conversations(self, user_id, limit, sort_order="DESC", offset=0):
-        query = ""
-        params = ()
-        if user_id:
-            query = f"SELECT conversation_id, title FROM hst_conversations where userId = ? order by updatedAt {sort_order}"
-            params = (user_id,)
-        else:
-            query = f"SELECT conversation_id, title FROM hst_conversations ORDER BY updatedAt {sort_order}"
-            params = ()
-        
-        result = await run_query_and_return_json_params(query, params)    
+        """
+        Retrieves a list of conversations for a given user, sorted by updatedAt.
 
-        return result 
+        Args:
+            user_id (str): The ID of the authenticated user.
+            limit (int): The maximum number of conversations to return.
+            sort_order (str): The order to sort conversations by updatedAt ('ASC' or 'DESC').
+            offset (int): The number of conversations to skip for pagination.
+
+        Returns:
+            JSON: A list of conversation objects with conversation_id and title.
+
+        """
+        try:
+            query = ""
+            params = ()
+            if user_id:
+                query = f"SELECT conversation_id, title FROM hst_conversations where userId = ? order by updatedAt {sort_order}"
+                params = (user_id,)
+            else: # If no user_id is provided, return all conversations -- This is for local testing purposes
+                query = f"SELECT conversation_id, title FROM hst_conversations ORDER BY updatedAt {sort_order}"
+                params = ()
+            
+            result = await run_query_params(query, params)
+            return result 
+        except Exception:
+            logger.exception("Error in get_conversation")
+            raise
    
     async def get_conversation_messages(self, user_id: str, conversation_id: str):
         """
@@ -43,22 +59,26 @@ class HistorySqlService:
             conversation_id (str): The ID of the conversation to retrieve.
 
         Returns:
-            JSON: The conversation object with messages or None if not found.
+            JSON: The conversation object with messages or None if not found.            
         """
         try: 
+            if not conversation_id:
+                logger.warning(f"No conversation_id found, cannot retrieve conversation messages.")
+                return None
+            
             query = ""
             params = ()
             if user_id:
                 query = f"SELECT role, content, citations, feedback FROM hst_conversation_messages where userId = ? and conversation_id = ?"
                 params = (user_id, conversation_id)
-            else:
+            else: # If no user_id is provided, return all conversation messages -- This is for local testing purposes
                 query = f"SELECT role, content, citations, feedback FROM hst_conversation_messages where conversation_id = ?"
                 params = (conversation_id,)
 
-            result = await run_query_params(query, params)   
-
-            return result               
-            
+            result = await run_query_params(query, params)
+            logging.info("AVJ-API-Read-GetMessage-Query: %s" % query)
+            logging.info("AVJ-API-Read-GetMessage-Result: %s" % result)
+            return result
         except Exception:
             logger.exception(
                 f"Error retrieving conversation {conversation_id} for user {user_id}")
@@ -199,6 +219,15 @@ class HistorySqlService:
             return False    
 
     async def generate_title(self, conversation_messages):
+        """
+        This function uses the Azure OpenAI service to summarize the conversation messages into a concise title.
+        
+        Args:
+            conversation_messages (list): List of messages in the conversation.
+
+        Returns:
+            str: A 4-word or less title summarizing the conversation.
+        """
         title_prompt = (
             "Summarize the conversation so far into a 4-word or less title. "
             "Do not use any quotation marks or punctuation. "
@@ -223,8 +252,19 @@ class HistorySqlService:
             return messages[-2]["content"]
 
     async def create_conversation( self, user_id, title="", conversation_id=None):
+        """
+        Creates a new conversation for the user with an optional title and conversation_id.
+
+        Args:
+            user_id (str): The ID of the authenticated user.
+            title (str): The title of the conversation.
+            conversation_id (str, optional): The ID of the conversation. If not provided, a new UUID will be generated.
+
+        Returns:
+            JSON: The created conversation object or None if creation failed.
+        """
         try:
-            logger.info(f"FABRIC-create_conversation: user {user_id} with title '{title}' and conversation_id '{conversation_id}'")
+            # logger.info(f"FABRIC-create_conversation: user {user_id} with title '{title}' and conversation_id '{conversation_id}'")
 
             if not user_id:
                 logger.warning(f"No User ID found, cannot create conversation.")
@@ -246,31 +286,49 @@ class HistorySqlService:
             query = f"INSERT INTO hst_conversations (userId, conversation_id, title, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)"
             params = (user_id, conversation_id, title, utcNow, utcNow)
             resp = await run_nonquery_params(query, params)
-            logger.info("Created conversation with ID: %s", conversation_id)
+            # logger.info("Created conversation with ID: %s", conversation_id)
             return resp
         except Exception:
             logger.exception("Error in create_conversation")
             raise  
             
     async def create_message(self, uuid, conversation_id, user_id, input_message: dict):
+        """
+        Creates a new message in the conversation history.
+
+        Args:
+            uuid (str): The unique identifier for the message.
+            conversation_id (str): The ID of the conversation to which the message belongs.
+            user_id (str): The ID of the authenticated user.
+            input_message (dict): The message content and metadata.
+
+        Returns:
+            JSON: The created message object or None if creation failed.
+        """
         try:
-            logger.info(f"FABRIC-create_message: user {user_id} with conversation_id '{conversation_id}' and input_message: {input_message}")
+            # logger.info(f"FABRIC-create_message: user {user_id} with conversation_id '{conversation_id}' and input_message: {input_message}")
             if not user_id:
                 logger.warning(f"No User ID found, cannot create message.")
                 return None
 
             if not conversation_id:
-                logger.warning(f"No conversation_id found, cannot create message.")
+                logger.warning(f"No conversation_id found, cannot create conversation message.")
                 return None
             
             # Ensure the conversation exists
             query = f"SELECT * FROM hst_conversations where conversation_id = ?"
-            conversation = await run_query_and_return_json_params(query, (conversation_id,))
-            if not conversation:
+            exist_conversation = await run_query_params(query, (conversation_id,))
+            if not exist_conversation or len(exist_conversation) == 0:
                 logger.error(f"Conversation not found for ID: {conversation_id}")
                 return None
             
-            logger.info(f"FABRIC-UPDATED-create_message-conversation_id: {conversation_id}")
+            # query = f"SELECT * FROM hst_conversations where conversation_id = ?"
+            # conversation = await run_query_and_return_json_params(query, (conversation_id,))
+            # if not conversation:
+            #     logger.error(f"Conversation not found for ID: {conversation_id}")
+            #     return None
+            
+            # logger.info(f"FABRIC-UPDATED-create_message-conversation_id: {conversation_id}")
            
             utcNow = datetime.utcnow().isoformat()
             # if self.enable_message_feedback:
@@ -293,9 +351,8 @@ class HistorySqlService:
             params = (user_id, conversation_id, input_message["role"], input_message["id"],
                       input_message["content"], "", feedback, utcNow, utcNow)
             resp = await run_nonquery_params(query, params)
-            logger.info("FABRIC-Created conversation status: %s, conversation_id: %s, message ID: %s, Content: %s",
-                        resp, conversation_id, input_message["id"], input_message["content"])
-            # resp = await self.container_client.upsert_item(message)
+            # logger.info("FABRIC-Created conversation status: %s, conversation_id: %s, message ID: %s, Content: %s",
+            #             resp, conversation_id, input_message["id"], input_message["content"])            
             if resp:
                 # Update the conversation's updatedAt timestamp
                 query_t = f"UPDATE hst_conversations SET updatedAt = ? WHERE conversation_id = ?"
@@ -347,14 +404,14 @@ class HistorySqlService:
                     user_id=user_id,
                     input_message=user_message,
                 )
-                # if createdMessageValue == "Conversation not found":
+               
                 if not createdMessageValue:
-                    logger.error(f"Conversation not found for ID: {conversation_id}")
+                    logger.warning(f"Conversation not found for ID: {conversation_id}")
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail="Conversation not found")
             else:
-                logger.error("No user message found in request")
+                logger.warning("No user message found in request")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="User message not found")
@@ -379,7 +436,7 @@ class HistorySqlService:
                     input_message=messages[-1],
                 )
             else:
-                logger.error("No assistant message found in request")
+                logger.warning("No assistant message found in request")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Assistant message not found")                
