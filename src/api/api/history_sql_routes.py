@@ -195,6 +195,12 @@ async def delete_all_conversations(request: Request):
             request_headers=request.headers)
         user_id = authenticated_user["user_principal_id"]
 
+        if not user_id:
+            track_event_if_configured("DeleteAllConversationsValidationError", {
+                "error": "user_id is missing",
+                "user_id": user_id
+            })
+            raise HTTPException(status_code=400, detail="user_id is required")
         # Get all user conversations
         conversations = await history_service.get_conversations(user_id, offset=0, limit=None)
         if not conversations:
