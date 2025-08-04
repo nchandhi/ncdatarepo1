@@ -150,12 +150,17 @@ class HistorySqlService:
                 return False
 
             # Delete all associated messages
-            query_m = f"DELETE FROM hst_conversation_messages where userId = ?"
-            await run_nonquery_params(query_m, (user_id,))
+            query_m = f"DELETE FROM hst_conversation_messages WHERE userId = ?"
+            messages_result = await run_nonquery_params(query_m, (user_id,))
 
             # Delete all conversations
-            query_c = f"DELETE FROM hst_conversations where userId = ?"
-            await run_nonquery_params(query_c, (user_id,))
+            query_c = f"DELETE FROM hst_conversations WHERE userId = ?"
+            conversations_result = await run_nonquery_params(query_c, (user_id,))
+
+            # Verify deletion was successful
+            if messages_result is False or conversations_result is False:
+                logger.error(f"Failed to delete all conversations for user {user_id}")
+                return False
 
             logger.info(f"Successfully deleted all conversations for user {user_id}.")
             return True
