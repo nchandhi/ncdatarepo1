@@ -34,6 +34,10 @@ async def get_fabric_db_connection():
                 len(token_bytes),
                 token_bytes
             )
+            # Format token for ODBC: interleave nulls and prefix length
+            # exptoken = ''.join([c + '\x00' for c in token.token])  # little-endian UTF-16-like
+            # token_struct = struct.pack("=I", len(exptoken)) + exptoken.encode("utf-8")
+
             SQL_COPT_SS_ACCESS_TOKEN = 1256
 
             # Set up the connection
@@ -42,6 +46,7 @@ async def get_fabric_db_connection():
                 connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};"
             else:
                 connection_string = fabric_sqldb_connection_string
+
             # connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};"
             conn = pyodbc.connect(
                 connection_string, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct}

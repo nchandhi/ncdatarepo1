@@ -77,6 +77,8 @@ async def list_conversations(
             })
 
         return Response(content=conversations, media_type="application/json", status_code=200)
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("Exception in /historyfab/list: %s", str(e))
         span = trace.get_current_span()
@@ -121,14 +123,13 @@ async def get_conversation_messages(request: Request, id: str = Query(...)):
                 "message_count": len(conversationMessages)
             })
        
-        # return Response(content=conversationMessages, media_type="application/json", status_code=200)
-    
         return JSONResponse(
             content={
                 "conversation_id": conversation_id,
                 "messages": conversationMessages},
             status_code=200)
-
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("Exception in /historyfab/read: %s", str(e))
         span = trace.get_current_span()
@@ -144,9 +145,7 @@ async def delete_conversation(request: Request, id: str = Query(...)):
         authenticated_user = get_authenticated_user_details(
             request_headers=request.headers)
         user_id = authenticated_user["user_principal_id"]
-        # Parse request body
-        # request_json = await request.json()
-        # conversation_id = request_json.get("conversation_id")
+        
         conversation_id = id
         if not conversation_id:
             track_event_if_configured("DeleteConversationValidationError", {
@@ -177,7 +176,9 @@ async def delete_conversation(request: Request, id: str = Query(...)):
                 })
             raise HTTPException(
                 status_code=404,
-                detail=f"Conversation {conversation_id} not found or user does not have permission.")
+                detail=f"Conversation {conversation_id} not found or user does not have permission to delete.")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("Exception in /historyfab/delete: %s", str(e))
         span = trace.get_current_span()
@@ -224,6 +225,8 @@ async def delete_all_conversations(request: Request):
             raise HTTPException(
                 status_code=404,
                 detail=f"Conversation not found for user {user_id}")
+    except HTTPException:
+        raise
     except Exception as e:
         logging.exception("Exception in /historyfab/delete_all: %s", str(e))
         span = trace.get_current_span()
@@ -281,8 +284,9 @@ async def rename_conversation(request: Request):
                 })
             raise HTTPException(
                 status_code=404,
-                detail=f"Conversation {conversation_id} not found or user does not have permission.")
-
+                detail=f"Conversation {conversation_id} not found or user does not have permission to rename.")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("Exception in /historyfab/rename: %s", str(e))
         span = trace.get_current_span()
@@ -290,76 +294,7 @@ async def rename_conversation(request: Request):
             span.record_exception(e)
             span.set_status(Status(StatusCode.ERROR, str(e)))
         return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)
-    
-# @router.post("/update")
-# async def update_conversation(request: Request):
-#     try:
-#         authenticated_user = get_authenticated_user_details(
-#             request_headers=request.headers)
-#         user_id = authenticated_user["user_principal_id"]
-
-#         # Parse request body
-#         request_json = await request.json()
-#         conversation_id = request_json.get("conversation_id")
-
-#         if not conversation_id:
-#             raise HTTPException(status_code=400, detail="No conversation_id found")
-
-#         # Call HistoryService to update conversation
-#         update_response = await history_service.update_conversation(user_id, request_json)
-
-#         if not update_response:
-#             raise HTTPException(status_code=500, detail="Failed to update conversation")
-#         track_event_if_configured("ConversationUpdated", {
-#             "user_id": user_id,
-#             "conversation_id": conversation_id,
-#             "title": update_response["title"]
-#         })
-
-#         return JSONResponse(
-#             content={
-#                 "success": True,
-#                 "data": {
-#                     "title": update_response["title"],
-#                     "date": update_response["updatedAt"],
-#                     "conversation_id": update_response["id"],
-#                 },
-#             },
-#             status_code=200,
-#         )
-#     except Exception as e:
-#         logger.exception("Exception in /history/update: %s", str(e))
-#         span = trace.get_current_span()
-#         if span is not None:
-#             span.record_exception(e)
-#             span.set_status(Status(StatusCode.ERROR, str(e)))
-#         return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)
-    
-# @router.post("/generate")
-# async def add_conversation(request: Request):
-#     try:
-#         authenticated_user = get_authenticated_user_details(
-#             request_headers=request.headers)
-#         user_id = authenticated_user["user_principal_id"]
-
-#         # Parse request body
-#         request_json = await request.json()
-
-#         response = await history_service.add_conversation(user_id, request_json)
-#         track_event_if_configured("ConversationCreated", {
-#             "user_id": user_id,
-#             "request": request_json,
-#         })
-#         return response
-
-#     except Exception as e:
-#         logger.exception("Exception in /generate: %s", str(e))
-#         span = trace.get_current_span()
-#         if span is not None:
-#             span.record_exception(e)
-#             span.set_status(Status(StatusCode.ERROR, str(e)))
-#         return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)
-
+ 
 @router.post("/update")
 async def update_conversation(request: Request):
     try:
@@ -396,6 +331,8 @@ async def update_conversation(request: Request):
             },
             status_code=200,
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("Exception in /historyfab/update: %s", str(e))
         span = trace.get_current_span()

@@ -263,12 +263,13 @@ export const historyRename = async (
 };
 
 export const historyDelete = async (convId: string): Promise<Response> => {
-  const userId = getUserIdFromLocalStorage();
-  const response = await fetch(`${baseURL}/historyfab/delete`, {
+  const userId = getUserIdFromLocalStorage();  
+  // const response = await fetch(`${baseURL}/historyfab/delete`, {
+  const response = await fetch(`${baseURL}/historyfab/delete?id=${encodeURIComponent(convId)}`, {
     method: "DELETE",
-    body: JSON.stringify({
-      conversation_id: convId,
-    }),
+    // body: JSON.stringify({
+    //   conversation_id: convId,
+    // }),
     headers: {
       "Content-Type": "application/json",
       "X-Ms-Client-Principal-Id": userId || "",

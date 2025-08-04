@@ -76,38 +76,36 @@ class HistorySqlService:
             bool: True if the conversation was deleted successfully, False otherwise.
         """
         try:
-            # cosmos_conversation_client = self.init_cosmosdb_client()
-
-            # Fetch conversation to ensure it exists and belongs to the user
-            # conversation = await cosmos_conversation_client.get_conversation(user_id, conversation_id)
-            
+            if not conversation_id:
+                logger.warning(f"No conversation_id found, cannot delete conversation.")
+                return False
+                       
             if user_id is None:
                 logger.warning(f"User ID is None, cannot delete conversation {conversation_id}.")
-                return False
-            
-            params = (user_id, conversation_id)
+                return False            
 
-            query = f"SELECT userId, conversation_id FROM hst_conversations where userId = ?  and conversation_id = ?"
-            conversation = await run_query_and_return_json_params(query, params) 
-            if not conversation:
+            query = f"SELECT userId, conversation_id FROM hst_conversations where conversation_id = ?"
+            conversation = await run_query_params(query, (conversation_id,)) 
+            # logger.info(f"FABRIC-DELETED-Retrieved conversation: {conversation}")
+            # Check if the conversation exists 
+            if not conversation or len(conversation) == 0:
                 logger.warning(f"Conversation {conversation_id} not found.")
-                return False
-            if conversation["userId"] != user_id:
+                return False    
+           
+            # If the userId in the conversation does not match the user_id, deny access
+            if conversation and conversation[0]["userId"] != user_id:
                 logger.warning(
                     f"User {user_id} does not have permission to delete {conversation_id}.")
                 return False
-
+            # Prepare parameters for deletion
+            params = (user_id, conversation_id)
             # Delete associated messages first (if applicable)
             query_m = f"DELETE FROM hst_conversation_messages where userId = ?  and conversation_id = ?"
             await run_nonquery_params(query_m, params)            
 
-            # await cosmos_conversation_client.delete_messages(conversation_id, user_id)
-
             # Delete the conversation itself
             query_m = f"DELETE FROM hst_conversations where userId = ?  and conversation_id = ?"
             await run_nonquery_params(query_m, params) 
-
-            # await cosmos_conversation_client.delete_conversation(user_id, conversation_id)
 
             logger.info(f"Successfully deleted conversation {conversation_id}.")
             return True
@@ -159,6 +157,7 @@ class HistorySqlService:
             bool: True if the title was updated successfully, False otherwise.
         """
         try:
+            logger.info(f"Renaming conversation {conversation_id} for user {user_id} to '{title}'")
             if not conversation_id:
                 raise ValueError("No conversation_id found")
 
@@ -170,14 +169,18 @@ class HistorySqlService:
                 logger.warning(f"Title is None, cannot rename title of the conversation {conversation_id}.")
                 return False
         
-            query = f"SELECT userId, conversation_id FROM hst_conversations where userId = ?  and conversation_id = ?"
-            conversation = await run_query_and_return_json_params(query, (user_id, conversation_id)) 
-            if not conversation:
+            query = f"SELECT userId, conversation_id FROM hst_conversations where conversation_id = ?"
+            conversation = await run_query_params(query, (conversation_id,)) 
+
+             # Check if the conversation exists 
+            if not conversation or len(conversation) == 0:
                 logger.warning(f"Conversation {conversation_id} not found.")
-                return False
-            if conversation["userId"] != user_id:
+                return False    
+           
+            # Check if the user has permission to delete it
+            if conversation and conversation[0]["userId"] != user_id:
                 logger.warning(
-                    f"User {user_id} does not have permission to update title of conversation {conversation_id}.")
+                    f"User {user_id} does not have permission to delete {conversation_id}.")
                 return False
             
             # Update the title of the conversation 
@@ -299,37 +302,7 @@ class HistorySqlService:
         except Exception:
             logger.exception("Error in create_message")
             raise  
-            
-    # async def add_conversation(self, user_id: str, request_json: dict):
-    #     try:
-    #         conversation_id = request_json.get("conversation_id")
-    #         messages = request_json.get("messages", [])
-
-    #         history_metadata = {}
-
-    #         if not conversation_id:
-    #             title = await self.generate_title(messages)
-    #             conversation_dict = await self.create_conversation(user_id, title)
-    #             conversation_id = conversation_dict["id"]
-    #             history_metadata["title"] = title
-    #             history_metadata["date"] = conversation_dict["createdAt"]
-
-    #         if messages and messages[-1]["role"] == "user":
-    #             created_message = await self.create_message(conversation_id=conversation_id, user_id=user_id, input_message=messages[-1])
-    #             if not created_message:
-    #                 raise ValueError(
-    #                     f"Conversation not found for ID: {conversation_id}")
-    #         else:
-    #             raise ValueError("No user message found")
-
-    #         request_body = {
-    #             "messages": messages, "history_metadata": {
-    #                 "conversation_id": conversation_id}}
-    #         return await complete_chat_request(request_body)
-    #     except Exception:
-    #         logger.exception("Error in add_conversation")
-    #         raise  
-
+       
     async def update_conversation(self, user_id: str, request_json: dict):
         try:
             conversation_id = request_json.get("conversation_id")
@@ -347,8 +320,8 @@ class HistorySqlService:
             
             if not conversation or len(conversation) == 0:
                 title = await self.generate_title(messages)
-                conversation = await self.create_conversation(user_id=user_id, conversation_id=conversation_id, title=title)
-                # logger.info(f"FABRIC-UPDATED-created conversation: {conversation}")
+                conversationCreated = await self.create_conversation(user_id=user_id, conversation_id=conversation_id, title=title)
+                # logger.info(f"FABRIC-UPDATED-created conversation: {conversationCreated}")
             
             # Format the incoming message object in the "chat/completions" messages format then write it to the
             # conversation history 
