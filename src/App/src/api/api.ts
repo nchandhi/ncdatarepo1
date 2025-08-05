@@ -81,7 +81,7 @@ export const historyRead = async (convId: string): Promise<ChatMessage[]> => {
             date: msg.createdAt,
             feedback: msg.feedback ?? undefined,
             context: msg.context,
-            citations: msg.content.citations,
+            citations: msg.citations,
             contentType: msg.contentType,
           };
           messages.push(message);

@@ -76,9 +76,23 @@ class HistorySqlService:
                 params = (conversation_id,)
 
             result = await run_query_params(query, params)
-            logging.info("AVJ-API-Read-GetMessage-Query: %s" % query)
-            logging.info("AVJ-API-Read-GetMessage-Result: %s" % result)
-            return result
+            # Process the result to deserialize citations
+            import json
+            processed_result = []
+            for message in result:
+                processed_message = dict(message)
+                # Deserialize citations from JSON string back to list
+                if processed_message.get("citations"):
+                    try:
+                        processed_message["citations"] = json.loads(processed_message["citations"])
+                    except (json.JSONDecodeError, TypeError) as e:
+                        logger.warning(f"Failed to deserialize citations: {e}")
+                        processed_message["citations"] = []
+                else:
+                    processed_message["citations"] = []
+                processed_result.append(processed_message)
+            
+            return processed_result
         except Exception:
             logger.exception(
                 f"Error retrieving conversation {conversation_id} for user {user_id}")
@@ -335,6 +349,18 @@ class HistorySqlService:
             #     message["feedback"] = "" 
             # todo
             feedback = ""
+            
+            # Extract citations from input_message
+            citations_json = ""
+            if "citations" in input_message and input_message["citations"]:
+                # Convert citations list to JSON string for storage
+                import json
+                try:
+                    citations_json = json.dumps(input_message["citations"])
+                except (TypeError, ValueError) as e:
+                    logger.warning(f"Failed to serialize citations: {e}")
+                    citations_json = ""
+            
             query = (
                 "INSERT INTO hst_conversation_messages ("
                 "userId, "
@@ -349,14 +375,14 @@ class HistorySqlService:
                 ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
             )
             params = (user_id, conversation_id, input_message["role"], input_message["id"],
-                      input_message["content"], "", feedback, utcNow, utcNow)
+                      input_message["content"], citations_json, feedback, utcNow, utcNow)
             resp = await run_nonquery_params(query, params)
             # logger.info("FABRIC-Created conversation status: %s, conversation_id: %s, message ID: %s, Content: %s",
             #             resp, conversation_id, input_message["id"], input_message["content"])            
             if resp:
                 # Update the conversation's updatedAt timestamp
                 query_t = f"UPDATE hst_conversations SET updatedAt = ? WHERE conversation_id = ?"
-                resp =await run_nonquery_params(query_t, (utcNow, conversation_id))
+                resp = await run_nonquery_params(query_t, (utcNow, conversation_id))
 
                 return resp
             else:
