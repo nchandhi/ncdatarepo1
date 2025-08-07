@@ -45,7 +45,7 @@ async def get_fabric_db_connection():
 
         # logging.info("FABRIC-SQL-connection_string: %s" % connection_string)        
         # logging.info("FABRIC-SQL-User: %s" % conn.getinfo(pyodbc.SQL_USER_NAME))
-        logging.info("FABRIC-SQL:Successfully Connected to Fabric SQL Database")
+        # logging.info("FABRIC-SQL:Successfully Connected to Fabric SQL Database")
         return conn
     except pyodbc.Error as e:
         logging.info("FABRIC-SQL:Failed to connect Fabric SQL Database")      

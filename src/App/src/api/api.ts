@@ -11,6 +11,8 @@ import {
   CosmosDBHealth,
   CosmosDBStatus,
 } from "../types/AppTypes";
+import { ApiErrorHandler } from "../utils/errorHandler";
+
 const baseURL = process.env.REACT_APP_API_BASE_URL;// base API URL
 
 export type UserInfo = {
@@ -25,6 +27,8 @@ export type UserInfo = {
 export async function getUserInfo(): Promise<UserInfo[]> {
   const response = await fetch(`/.auth/me`);
   if (!response.ok) {
+    // Use new error handling system
+    await ApiErrorHandler.handleApiError(response, '/.auth/me');
     console.error("No identity provider found. Access to chat will be blocked.");
     return [];
   }
@@ -41,59 +45,66 @@ export async function getUserInfo(): Promise<UserInfo[]> {
   return payload;
 }
 
-
 function getUserIdFromLocalStorage(): string | null {
   return localStorage.getItem("userId");
 }
 
 export const historyRead = async (convId: string): Promise<ChatMessage[]> => {
   const userId = getUserIdFromLocalStorage();
-  const response = await fetch(`${baseURL}/historyfab/read?id=${encodeURIComponent(convId)}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Ms-Client-Principal-Id": userId || "",
-    },
-  })
-    .then(async (res) => {
-      console.log(res.status, res.statusText);
-      if (!res.ok) {
-        console.error(`Error ${res.status}: ${res.statusText}`);
-        return historyReadResponse.messages.map((msg: any) => ({
+  const endpoint = `/historyfab/read?id=${encodeURIComponent(convId)}`;
+  
+  try {
+    const response = await fetch(`${baseURL}${endpoint}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Ms-Client-Principal-Id": userId || "",
+      },
+    });
+
+    console.log(response.status, response.statusText);
+    
+    if (!response.ok) {
+      // Use new error handling system
+      await ApiErrorHandler.handleApiError(response, endpoint);
+      
+      // Return fallback data (maintaining current behavior)
+      return historyReadResponse.messages.map((msg: any) => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        date: msg.createdAt,
+        feedback: msg.feedback ?? undefined,
+        context: msg.context,
+        contentType: msg.contentType,
+      }));
+    }
+
+    const payload = await response.json();
+    const messages: ChatMessage[] = [];
+
+    if (Array.isArray(payload?.messages)) {
+      payload.messages.forEach((msg: any) => {
+        const message: ChatMessage = {
           id: msg.id,
           role: msg.role,
           content: msg.content,
           date: msg.createdAt,
           feedback: msg.feedback ?? undefined,
           context: msg.context,
+          citations: msg.citations,
           contentType: msg.contentType,
-        }));
-      }
-      const payload = await res.json();
-      const messages: ChatMessage[] = [];
-
-      if (Array.isArray(payload?.messages)) {
-        payload.messages.forEach((msg: any) => {
-          const message: ChatMessage = {
-            id: msg.id,
-            role: msg.role,
-            content: msg.content,
-            date: msg.createdAt,
-            feedback: msg.feedback ?? undefined,
-            context: msg.context,
-            citations: msg.citations,
-            contentType: msg.contentType,
-          };
-          messages.push(message);
-        });
-      }
-      return messages;
-    })
-    .catch((err) => {
-      console.error("There was an issue fetching your data:", err);
-      return [];
-    });
-  return response;
+        };
+        messages.push(message);
+      });
+    }
+    return messages;
+    
+  } catch (error) {
+    // Use new error handling system
+    ApiErrorHandler.handleNetworkError(error, endpoint);
+    return [];
+  }
 };
 
 export const historyList = async (
@@ -101,20 +112,54 @@ export const historyList = async (
   limit = 25
 ): Promise<Conversation[] | null> => {
   const userId = getUserIdFromLocalStorage();
-  let response = await fetch(`${baseURL}/historyfab/list?offset=${offset}&limit=${limit}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Ms-Client-Principal-Id": userId || "",
-    },
-  })
-    .then(async (res) => {
-      let payload = await res.json();
-      if (!Array.isArray(payload)) {
-        console.error("There was an issue fetching your data.");
-        return null;
-      }
-      const conversations: Conversation[] = payload.map((conv: any) => {
+  const endpoint = `/historyfab/list?offset=${offset}&limit=${limit}`;
+  
+  try {
+    const response = await fetch(`${baseURL}${endpoint}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Ms-Client-Principal-Id": userId || "",
+      },
+    });
+
+    if (!response.ok) {
+      // Use new error handling system
+      await ApiErrorHandler.handleApiError(response, endpoint);
+      return null;
+    }
+
+    const payload = await response.json();
+    
+    if (!Array.isArray(payload)) {
+      // Log as general error
+      ApiErrorHandler.handleGeneralError(
+        new Error("Invalid response format: expected array"), 
+        endpoint
+      );
+      return null;
+    }
+    
+    const conversations: Conversation[] = payload.map((conv: any) => {
+      const conversation: Conversation = {
+        // Use conversationId as fallback if id is not available
+        id: conv.id || conv.conversation_id,
+        title: conv.title,
+        date: conv.createdAt,
+        updatedAt: conv?.updatedAt,
+        messages: [],
+      };
+      return conversation;
+    });
+    return conversations;
+    
+  } catch (error) {
+    // Use new error handling system with fallback data
+    ApiErrorHandler.handleNetworkError(error, endpoint);
+    
+    // Return fallback data (maintaining current behavior)
+    const conversations: Conversation[] = historyListResponse.map(
+      (conv: any) => {
         const conversation: Conversation = {
           // Use conversationId as fallback if id is not available
           id: conv.id || conv.conversation_id,
@@ -124,27 +169,10 @@ export const historyList = async (
           messages: [],
         };
         return conversation;
-      });
-      return conversations;
-    })
-    .catch((err) => {
-      console.error("There was an issue fetching your data:", err);
-      const conversations: Conversation[] = historyListResponse.map(
-        (conv: any) => {
-          const conversation: Conversation = {
-            // Use conversationId as fallback if id is not available
-            id: conv.id || conv.conversation_id,
-            title: conv.title,
-            date: conv.createdAt,
-            updatedAt: conv?.updatedAt,
-            messages: [],
-          };
-          return conversation;
-        }
-      );
-      return conversations;
-    });
-  return response;
+      }
+    );
+    return conversations;
+  }
 };
 
 export const historyUpdate = async (
@@ -152,83 +180,85 @@ export const historyUpdate = async (
   convId: string
 ): Promise<Response> => {
   const userId = getUserIdFromLocalStorage();
-  const response = await fetch(`${baseURL}/historyfab/update`, {
-    method: "POST",
-    body: JSON.stringify({
-      conversation_id: convId,
-      messages: messages,
-    }),
-    headers: {
-      "Content-Type": "application/json",
-      "X-Ms-Client-Principal-Id": userId || "",
-    },
-  })
-    .then(async (res) => {
-      return res;
-    })
-    .catch((_err) => {
-      console.error("There was an issue fetching your data.");
-      const errRes: Response = {
-        ...new Response(),
-        ok: false,
-        status: 500,
-      };
-      return errRes;
-    });
-  return response;
-};
-
-export async function getLayoutConfig(): Promise<{
-  appConfig: AppConfig;
-  charts: ChartConfigItem[];
-}> {
-  const userId = getUserIdFromLocalStorage();
-  const response = await fetch(`${baseURL}/api/layout-config`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Ms-Client-Principal-Id": userId || "",
-    },
-  });
+  const endpoint = `/historyfab/update`;
+  
   try {
-    if (response.ok) {
-      const layoutConfigData = await response.json();
-      return layoutConfigData;
+    const response = await fetch(`${baseURL}${endpoint}`, {
+      method: "POST",
+      body: JSON.stringify({
+        conversation_id: convId,
+        messages: messages,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        "X-Ms-Client-Principal-Id": userId || "",
+      },
+    });
+
+    // Log errors but still return the response (maintaining current behavior)
+    if (!response.ok) {
+      await ApiErrorHandler.handleApiError(response, endpoint);
     }
-  } catch {
-    console.error("Failed to parse Layout config data");
+    
+    return response;
+    
+  } catch (error) {
+    // Use new error handling system
+    ApiErrorHandler.handleNetworkError(error, endpoint);
+    
+    // Return error response (maintaining current behavior)
+    const errRes: Response = {
+      ...new Response(),
+      ok: false,
+      status: 500,
+    };
+    return errRes;
   }
-  return {
-    appConfig: null,
-    charts: [],
-  };
-}
+};
 
 export async function callConversationApi(
   options: ConversationRequest,
   abortSignal: AbortSignal
 ): Promise<Response> {
   const userId = getUserIdFromLocalStorage();
-  const response = await fetch(`${baseURL}/api/chat`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Ms-Client-Principal-Id": userId || "",
-    },
-    body: JSON.stringify({
-      messages: options.messages,
-      conversation_id: options.id,
-      last_rag_response: options.last_rag_response
-    }),
-    signal: abortSignal,
-  });
+  const endpoint = `/api/chat`;
+  
+  try {
+    const response = await fetch(`${baseURL}${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Ms-Client-Principal-Id": userId || "",
+      },
+      body: JSON.stringify({
+        messages: options.messages,
+        conversation_id: options.id,
+        last_rag_response: options.last_rag_response
+      }),
+      signal: abortSignal,
+    });
 
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(JSON.stringify(errorData.error));
+    if (!response.ok) {
+      // Handle error with new system but still throw (maintaining current behavior)
+      const errorInfo = await ApiErrorHandler.handleApiError(response, endpoint);
+      
+      try {
+        const errorData = await response.json();
+        throw new Error(JSON.stringify(errorData.error));
+      } catch (parseError) {
+        throw new Error(errorInfo.message);
+      }
+    }
+
+    return response;
+    
+  } catch (error: any) {
+    // Log network errors
+    if (error.name !== 'AbortError') {
+      ApiErrorHandler.handleNetworkError(error, endpoint);
+    }
+    throw error; // Re-throw to maintain current behavior
   }
-
-  return response;
 }
 
 export const historyRename = async (
@@ -236,184 +266,142 @@ export const historyRename = async (
   title: string
 ): Promise<Response> => {
   const userId = getUserIdFromLocalStorage();
-  const response = await fetch(`${baseURL}/historyfab/rename`, {
-    method: "POST",
-    body: JSON.stringify({
-      conversation_id: convId,
-      title: title,
-    }),
-    headers: {
-      "Content-Type": "application/json",
-      "X-Ms-Client-Principal-Id": userId || "",
-    },
-  })
-    .then((res) => {
-      return res;
-    })
-    .catch((_err) => {
-      console.error("There was an issue fetching your data.");
-      const errRes: Response = {
-        ...new Response(),
-        ok: false,
-        status: 500,
-      };
-      return errRes;
+  const endpoint = `/historyfab/rename`;
+  
+  try {
+    const response = await fetch(`${baseURL}${endpoint}`, {
+      method: "POST",
+      body: JSON.stringify({
+        conversation_id: convId,
+        title: title,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+        "X-Ms-Client-Principal-Id": userId || "",
+      },
     });
-  return response;
+
+    // Log errors but still return the response (maintaining current behavior)
+    if (!response.ok) {
+      await ApiErrorHandler.handleApiError(response, endpoint);
+    }
+    
+    return response;
+    
+  } catch (error) {
+    console.error("Error renaming conversation:", error);
+    // Use new error handling system
+    ApiErrorHandler.handleNetworkError(error, endpoint);
+    
+    // Return error response (maintaining current behavior)
+    const errRes: Response = {
+      ...new Response(),
+      ok: false,
+      status: 500,
+    };
+    return errRes;
+  }
 };
 
 export const historyDelete = async (convId: string): Promise<Response> => {
   const userId = getUserIdFromLocalStorage();  
-  // const response = await fetch(`${baseURL}/historyfab/delete`, {
-  const response = await fetch(`${baseURL}/historyfab/delete?id=${encodeURIComponent(convId)}`, {
-    method: "DELETE",
-    // body: JSON.stringify({
-    //   conversation_id: convId,
-    // }),
-    headers: {
-      "Content-Type": "application/json",
-      "X-Ms-Client-Principal-Id": userId || "",
-    },
-  })
-    .then((res) => {
-      return res;
-    })
-    .catch((_err) => {
-      console.error("There was an issue fetching your data.");
-      const errRes: Response = {
-        ...new Response(),
-        ok: false,
-        status: 500,
-      };
-      return errRes;
+  const endpoint = `/historyfab/delete?id=${encodeURIComponent(convId)}`;
+  
+  try {
+    const response = await fetch(`${baseURL}${endpoint}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Ms-Client-Principal-Id": userId || "",
+      },
     });
-  return response;
+
+    // Log errors but still return the response (maintaining current behavior)
+    if (!response.ok) {
+      await ApiErrorHandler.handleApiError(response, endpoint);
+    }
+    
+    return response;
+    
+  } catch (error) {
+    // Use new error handling system
+    ApiErrorHandler.handleNetworkError(error, endpoint);
+    
+    // Return error response (maintaining current behavior)
+    const errRes: Response = {
+      ...new Response(),
+      ok: false,
+      status: 500,
+    };
+    return errRes;
+  }
 };
 
 export const historyDeleteAll = async (): Promise<Response> => {
   const userId = getUserIdFromLocalStorage();
-  const response = await fetch(`${baseURL}/historyfab/delete_all`, {
-    method: "DELETE",
-    body: JSON.stringify({}),
-    headers: {
-      "Content-Type": "application/json",
-      "X-Ms-Client-Principal-Id": userId || "",
-    },
-  })
-    .then((res) => {
-      return res;
-    })
-    .catch((_err) => {
-      console.error("There was an issue fetching your data.");
-      const errRes: Response = {
-        ...new Response(),
-        ok: false,
-        status: 500,
-      };
-      return errRes;
+  const endpoint = `/historyfab/delete_all`;
+  
+  try {
+    const response = await fetch(`${baseURL}${endpoint}`, {
+      method: "DELETE",
+      body: JSON.stringify({}),
+      headers: {
+        "Content-Type": "application/json",
+        "X-Ms-Client-Principal-Id": userId || "",
+      },
     });
-  return response;
-};
 
-export const historyEnsure = async (): Promise<CosmosDBHealth> => {
-  const userId = getUserIdFromLocalStorage();
-  const response = await fetch(`${baseURL}/historyfab/ensure`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Ms-Client-Principal-Id": userId || "",
-    },
-  })
-    .then(async (res) => {
-      const respJson = await res.json();
-      let formattedResponse;
-      if (respJson.message) {
-        formattedResponse = CosmosDBStatus.Working;
-      } else {
-        if (res.status === 500) {
-          formattedResponse = CosmosDBStatus.NotWorking;
-        } else if (res.status === 401) {
-          formattedResponse = CosmosDBStatus.InvalidCredentials;
-        } else if (res.status === 422) {
-          formattedResponse = respJson.error;
-        } else {
-          formattedResponse = CosmosDBStatus.NotConfigured;
-        }
-      }
-      if (!res.ok) {
-        return {
-          cosmosDB: false,
-          status: formattedResponse,
-        };
-      } else {
-        return {
-          cosmosDB: true,
-          status: formattedResponse,
-        };
-      }
-    })
-    .catch((err) => {
-      console.error("There was an issue fetching your data.");
-      return {
-        cosmosDB: false,
-        status: err,
-      };
-    });
-  return response;
-};
-
-export const historyGenerate = async (
-  options: ConversationRequest,
-  abortSignal: AbortSignal,
-  convId?: string
-): Promise<Response> => {
-  let body;
-  if (convId) {
-    body = JSON.stringify({
-      conversation_id: convId,
-      messages: options.messages,
-    });
-  } else {
-    body = JSON.stringify({
-      messages: options.messages,
-    });
+    // Log errors but still return the response (maintaining current behavior)
+    if (!response.ok) {
+      await ApiErrorHandler.handleApiError(response, endpoint);
+    }
+    
+    return response;
+    
+  } catch (error) {
+    // Use new error handling system
+    ApiErrorHandler.handleNetworkError(error, endpoint);
+    
+    // Return error response (maintaining current behavior)
+    const errRes: Response = {
+      ...new Response(),
+      ok: false,
+      status: 500,
+    };
+    return errRes;
   }
-  const userId = getUserIdFromLocalStorage();
-  const response = await fetch(`${baseURL}/historyfab/generate`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Ms-Client-Principal-Id": userId || "",
-    },
-    body: body,
-    signal: abortSignal,
-  })
-    .then((res) => {
-      return res;
-    })
-    .catch((_err) => {
-      console.error("There was an issue fetching your data.");
-      return new Response();
-    });
-  return response;
 };
 
 export const fetchCitationContent = async (body: any) => {
+  const endpoint = `/api/fetch-azure-search-content`;
+  
   try {
-    const response = await fetch(`${baseURL}/api/fetch-azure-search-content`, {
+    const response = await fetch(`${baseURL}${endpoint}`, {
       headers: {
         "Content-Type": "application/json",
       },
       method: "POST",
       body: JSON.stringify(body),
     });
+    
     if (!response.ok) {
-      throw new Error(`Error: ${response.status} ${response.statusText}`);
+      // Handle error with new system and throw (maintaining current behavior)
+      const errorInfo = await ApiErrorHandler.handleApiError(response, endpoint);
+      throw new Error(errorInfo.message);
     }
+    
     const data = await response.json();
     return data;
-  } catch (error) {
-    console.error("Failed to fetch azure search content:", error);
-    throw error;
+    
+  } catch (error: any) {
+    // Use new error handling system
+    if (error.message && !error.message.includes('Failed to fetch')) {
+      // If it's already our formatted error, just re-throw
+      throw error;
+    } else {
+      // Handle network errors
+      const errorInfo = ApiErrorHandler.handleNetworkError(error, endpoint);
+      throw new Error(errorInfo.message);
+    }
   }
 };
