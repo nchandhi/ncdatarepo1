@@ -12,9 +12,9 @@ types-requests==2.32.4.20250611
 aiohttp==3.12.9
 
 # Azure Services
-azure-identity==1.23.0
+azure-identity==1.23.1
 azure-search-documents==11.6.0b12
-azure-ai-projects==1.0.0b12
+azure-ai-projects==1.1.0b2
 azure-ai-inference==1.0.0b9
 azure-cosmos==4.9.0
 
