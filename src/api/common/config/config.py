@@ -17,6 +17,7 @@ class Config:
         self.fabric_sqldb_server = os.getenv("FABRIC_SQLDB_SERVER")
         self.fabric_driver = "{ODBC Driver 17 for SQL Server}"
         self.fabric_sqldb_connection_string = os.getenv("FABRIC_SQLDB_CONNECTION_STRING", "")
+        self.fabric_connection_name = os.getenv("FABRIC_CONNECTION_NAME", "")
 
         # SQL Database configuration
         self.sqldb_database = os.getenv("SQLDB_DATABASE")
