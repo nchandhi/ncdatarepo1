@@ -12,6 +12,12 @@ load_dotenv()
 
 class Config:
     def __init__(self):
+        # FabricSQL Database configuration
+        self.fabric_sqldb_database = os.getenv("FABRIC_SQLDB_DATABASE")
+        self.fabric_sqldb_server = os.getenv("FABRIC_SQLDB_SERVER")
+        self.fabric_driver = "{ODBC Driver 17 for SQL Server}"
+        self.fabric_sqldb_connection_string = os.getenv("FABRIC_SQLDB_CONNECTION_STRING", "")
+
         # SQL Database configuration
         self.sqldb_database = os.getenv("SQLDB_DATABASE")
         self.sqldb_server = os.getenv("SQLDB_SERVER")
@@ -44,3 +50,4 @@ class Config:
         self.azure_cosmosdb_enable_feedback = os.getenv("AZURE_COSMOSDB_ENABLE_FEEDBACK", "false").lower() == "true"
 
         self.solution_name = os.getenv("SOLUTION_NAME", "")
+        self.app_env = os.getenv("APP_ENV", "prod").lower()
