@@ -12,7 +12,7 @@ import {
 import { appReducer } from "./AppReducer";
 import { actionConstants } from "./ActionConstants";
 import { defaultSelectedFilters, generateUUIDv4 } from "../configs/Utils";
-import { historyEnsure } from "../api/api";
+// import { historyEnsure } from "../api/api";
 
 export type AppState = {
   dashboards: {
@@ -200,33 +200,33 @@ export const AppContext = createContext<{
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-  useEffect(() => {
-    const getHistoryEnsure = async () => {
-      // dispatch({ type: 'UPDATE_CHAT_HISTORY_LOADING_STATE', payload: ChatHistoryLoadingState.Loading })
-      historyEnsure()
-        .then((response) => {
-          if (response?.cosmosDB) {
-            console.log("COSMOS DB IS OKAY ");
-            dispatch({
-              type: actionConstants.STORE_COSMOS_INFO,
-              payload: response,
-            });
-          } else {
-            dispatch({
-              type: actionConstants.STORE_COSMOS_INFO,
-              payload: response,
-            });
-          }
-        })
-        .catch((_err) => {
-          dispatch({
-            type: actionConstants.STORE_COSMOS_INFO,
-            payload: { cosmosDB: false, status: CosmosDBStatus.NotConfigured },
-          });
-        });
-    };
-    // getHistoryEnsure();
-  }, []);
+  // useEffect(() => {
+  //   const getHistoryEnsure = async () => {
+  //     // dispatch({ type: 'UPDATE_CHAT_HISTORY_LOADING_STATE', payload: ChatHistoryLoadingState.Loading })
+  //     historyEnsure()
+  //       .then((response) => {
+  //         if (response?.cosmosDB) {
+  //           console.log("COSMOS DB IS OKAY ");
+  //           dispatch({
+  //             type: actionConstants.STORE_COSMOS_INFO,
+  //             payload: response,
+  //           });
+  //         } else {
+  //           dispatch({
+  //             type: actionConstants.STORE_COSMOS_INFO,
+  //             payload: response,
+  //           });
+  //         }
+  //       })
+  //       .catch((_err) => {
+  //         dispatch({
+  //           type: actionConstants.STORE_COSMOS_INFO,
+  //           payload: { cosmosDB: false, status: CosmosDBStatus.NotConfigured },
+  //         });
+  //       });
+  //   };
+  //   // getHistoryEnsure();
+  // }, []);
 
   return (
     <AppContext.Provider value={{ state, dispatch: dispatch }}>
