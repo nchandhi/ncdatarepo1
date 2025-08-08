@@ -60,7 +60,7 @@ class FabricAgentFactory(BaseAgentFactory):
                 tools=fabric.definitions,
             )
 
-            # print(f"FABRIC-CustomerSalesKernel-Created Agent, ID: %s" % agent.id, flush=True)
+            print(f"FABRIC-CustomerSalesKernel-Created Agent, ID: %s" % agent.id, flush=True)
 
             return {
                 "agent": agent,

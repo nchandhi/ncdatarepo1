@@ -192,7 +192,7 @@ class ChatWithDataPlugin:
             agent_info = await FabricAgentFactory.get_agent()
             agent = agent_info["agent"]
             project_client = agent_info["client"]
-            # print("FABRIC-CustomerSalesKernel: Fabric agent retrieved successfully", flush=True)
+            print("FABRIC-CustomerSalesKernel: Fabric agent retrieved successfully", flush=True)
 
             # Create thread
             thread = project_client.agents.threads.create()
@@ -252,9 +252,9 @@ class ChatWithDataPlugin:
                 except Exception as messages_error:
                     # logging.error(f"Failed to retrieve messages: {type(messages_error).__name__}: {messages_error}")
                     raise
-                
 
-                project_client.agents.threads.delete(thread_id=thread.id)
+                logging.info(f"FABRIC-CustomerSalesKernel-Thread ID: {thread.id}, Run ID: {run.id}")
+                # project_client.agents.threads.delete(thread_id=thread.id)
                 
             if not answer["answer"]:
                 answer["answer"] = "I couldn't find specific information about customer sales. Please try rephrasing your question."
