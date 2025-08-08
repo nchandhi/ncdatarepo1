@@ -113,12 +113,7 @@ export const segregateItems = (items: Conversation[]) => {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  // Sort items by updatedAt in descending order
-  items.sort(
-    (a, b) =>
-      new Date(b.updatedAt ? b.updatedAt : new Date()).getTime() -
-      new Date(a.updatedAt ? a.updatedAt : new Date()).getTime()
-  );
+
   const groupedItems: {
     Today: Conversation[];
     Yesterday: Conversation[];
