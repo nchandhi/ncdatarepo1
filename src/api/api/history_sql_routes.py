@@ -41,7 +41,6 @@ logging.getLogger("azure.monitor.opentelemetry.exporter.export._base").setLevel(
 
 # Single instance of HistoryService (if applicable)
 history_service = HistorySqlService()
-
 @router.get("/list")
 async def list_conversations(
     request: Request,
@@ -49,24 +48,31 @@ async def list_conversations(
     limit: int = Query(25, alias="limit")
 ):
     try:
-        authenticated_user = get_authenticated_user_details(
-            request_headers=request.headers)
-        user_id = authenticated_user["user_principal_id"]
+        authenticated_user = get_authenticated_user_details(request_headers=request.headers)
+        user_id = authenticated_user.get("user_principal_id")
 
-        logger.info(f"Historyfab list-API: user_id: {user_id}, offset: {offset}, limit: {limit}")
+        logger.info(
+            f"Historyfab list-API called | user_id: {user_id}, offset: {offset}, limit: {limit}"
+        )
 
         # Get conversations
-        conversations = await history_service.get_conversations(user_id, offset=offset, limit=limit)
-        # logging.info("FABRIC-API-list-Conv: %s" % conversations)
-        if user_id:            
-            track_event_if_configured("ConversationsListed", {
-                "user_id": user_id,
-                "offset": offset,
-                "limit": limit,
-                "conversation_count": len(conversations)
-            })
+        conversations = await history_service.get_conversations(
+            user_id, offset=offset, limit=limit
+        )
+
+        if user_id:
+            track_event_if_configured(
+                "ConversationsListed",
+                {
+                    "user_id": user_id,
+                    "offset": offset,
+                    "limit": limit,
+                    "conversation_count": len(conversations),
+                }
+            )
 
         return JSONResponse(content=conversations, status_code=200)
+
     except HTTPException:
         raise
     except Exception as e:
@@ -75,7 +81,10 @@ async def list_conversations(
         if span is not None:
             span.record_exception(e)
             span.set_status(Status(StatusCode.ERROR, str(e)))
-        return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)
+        return JSONResponse(
+            content={"error": "An internal error has occurred!"},
+            status_code=500
+        )
 
 @router.get("/read")
 async def get_conversation_messages(request: Request, id: str = Query(...)):
