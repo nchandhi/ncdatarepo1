@@ -18,7 +18,10 @@ class HistorySqlService:
     def __init__(self):
         config = Config()
 
-        self.use_chat_history_enabled = config.use_chat_history_enabled
+        self.azure_openai_endpoint = config.azure_openai_endpoint
+        self.azure_openai_api_version = config.azure_openai_api_version
+        self.azure_openai_deployment_name = config.azure_openai_deployment_model
+        self.azure_openai_resource = config.azure_openai_resource
        
     async def get_conversations(self, user_id, limit, sort_order="DESC", offset=0):
         """
@@ -232,6 +235,34 @@ class HistorySqlService:
             logger.exception(f"Error updating title of conversation {conversation_id} to '{title}': {e}")
             return False    
 
+    def init_openai_client(self):
+        user_agent = "GitHubSampleWebApp/AsyncAzureOpenAI/1.0.0"
+
+        try:
+            if not self.azure_openai_endpoint and not self.azure_openai_resource:
+                raise ValueError(
+                    "AZURE_OPENAI_ENDPOINT or AZURE_OPENAI_RESOURCE is required")
+
+            endpoint = self.azure_openai_endpoint or f"https://{self.azure_openai_resource}.openai.azure.com/"
+            ad_token_provider = None
+
+            logger.debug("Using Azure AD authentication for OpenAI")
+            ad_token_provider = get_bearer_token_provider(
+                DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
+
+            if not self.azure_openai_deployment_name:
+                raise ValueError("AZURE_OPENAI_MODEL is required")
+
+            return AsyncAzureOpenAI(
+                api_version=self.azure_openai_api_version,
+                azure_ad_token_provider=ad_token_provider,
+                default_headers={"x-ms-useragent": user_agent},
+                azure_endpoint=endpoint,
+            )
+        except Exception:
+            logger.exception("Failed to initialize Azure OpenAI client")
+            raise
+    
     async def generate_title(self, conversation_messages):
         """
         This function uses the Azure OpenAI service to summarize the conversation messages into a concise title.

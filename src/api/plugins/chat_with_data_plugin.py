@@ -193,10 +193,11 @@ class ChatWithDataPlugin:
             agent = agent_info["agent"]
             project_client = agent_info["client"]
             print("FABRIC-CustomerSalesKernel: Fabric agent retrieved successfully", flush=True)
+            print(f"FABRIC-CustomerSalesKernel: Agent ID: {agent_info['agent'].id}", flush=True)
 
             # Create thread
             thread = project_client.agents.threads.create()
-            # print(f"FABRIC-CustomerSalesKernel: Thread created successfully: {thread.id}", flush=True)
+            print(f"FABRIC-CustomerSalesKernel: Thread created successfully: {thread.id}", flush=True)
 
             # Create message with the actual question
             project_client.agents.messages.create(
@@ -204,13 +205,13 @@ class ChatWithDataPlugin:
                 role=MessageRole.USER,
                 content=question,
             )
-            # print(f"FABRIC-CustomerSalesKernel: Message created in thread {thread.id} with question: {question}", flush=True)
+            print(f"FABRIC-CustomerSalesKernel: Message created in thread {thread.id} with question: {question}", flush=True)
 
             run = project_client.agents.runs.create_and_process(
                 thread_id=thread.id,
                 agent_id=agent.id
             )
-            # print(f"FABRIC-CustomerSalesKernel: Agent run completed with status: {run.status}")
+            print(f"FABRIC-CustomerSalesKernel: Agent run completed with status: {run.status}")
 
             if run.status == "failed":
                 logging.error(f"FABRIC-CustomerSalesKernel: Run failed: {run.last_error}")
