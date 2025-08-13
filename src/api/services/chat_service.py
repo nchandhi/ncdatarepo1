@@ -25,10 +25,10 @@ from azure.ai.agents.models import TruncationObject, MessageRole, ListSortOrder
 
 from cachetools import TTLCache
 
+from common.database.sqldb_service import adjust_processed_data_dates
 from helpers.utils import format_stream_response
 from common.config.config import Config
 from agents.chart_agent_factory import ChartAgentFactory
-
 # Constants
 HOST_NAME = "CKM"
 HOST_INSTRUCTIONS = "Answer questions about call center operations"
@@ -281,3 +281,28 @@ class ChatService:
             "created": int(time.time()),
             "object": chart_data,
         }
+
+    async def adjust_data_dates(self):
+        """
+        Adjusts the dates in the processed data tables to align with the current date.
+        This method calls the adjust_processed_data_dates function from sqldb_service.
+
+        Returns:
+            dict: A response containing success status and message.
+
+        Raises:
+            HTTPException: If an error occurs while adjusting the data dates.
+        """
+        try:
+            await adjust_processed_data_dates()
+            logger.info("Successfully adjusted processed data dates.")
+            return {
+                "success": True,
+                "message": "Processed data dates have been successfully adjusted to current date."
+            }
+        except Exception as e:
+            logger.error("Error adjusting processed data dates: %s", e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="An error occurred while adjusting processed data dates."
+            ) from e

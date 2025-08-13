@@ -1,4 +1,4 @@
-# from datetime import datetime
+from datetime import datetime
 import struct
 
 # import pandas as pd
@@ -63,6 +63,50 @@ async def execute_sql_query(sql_query):
     except Exception as e:
         logging.error("Error executing SQL query: %s", e)
         return None
+    finally:
+        if cursor:
+            cursor.close()
+        conn.close()
+
+
+async def adjust_processed_data_dates():
+    """
+    Adjusts the dates in the processed_data, km_processed_data, and processed_data_key_phrases tables
+    to align with the current date.
+    """
+    conn = await get_db_connection()
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        # Adjust the dates to the current date
+        today = datetime.today()
+        cursor.execute(
+            "SELECT MAX(CAST(StartTime AS DATETIME)) FROM [dbo].[processed_data]"
+        )
+        max_start_time = (cursor.fetchone())[0]
+
+        if max_start_time:
+            days_difference = (today - max_start_time).days - 1
+            if days_difference != 0:
+                # Update processed_data table
+                cursor.execute(
+                    "UPDATE [dbo].[processed_data] SET StartTime = FORMAT(DATEADD(DAY, ?, StartTime), 'yyyy-MM-dd "
+                    "HH:mm:ss'), EndTime = FORMAT(DATEADD(DAY, ?, EndTime), 'yyyy-MM-dd HH:mm:ss')",
+                    (days_difference, days_difference)
+                )
+                # Update km_processed_data table
+                cursor.execute(
+                    "UPDATE [dbo].[km_processed_data] SET StartTime = FORMAT(DATEADD(DAY, ?, StartTime), 'yyyy-MM-dd "
+                    "HH:mm:ss'), EndTime = FORMAT(DATEADD(DAY, ?, EndTime), 'yyyy-MM-dd HH:mm:ss')",
+                    (days_difference, days_difference)
+                )
+                # Update processed_data_key_phrases table
+                cursor.execute(
+                    "UPDATE [dbo].[processed_data_key_phrases] SET StartTime = FORMAT(DATEADD(DAY, ?, StartTime), "
+                    "'yyyy-MM-dd HH:mm:ss')", (days_difference,)
+                )
+                # Commit the changes
+                conn.commit()
     finally:
         if cursor:
             cursor.close()

@@ -2,6 +2,7 @@ import logging
 import os
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, Response
+from services.chat_service import ChatService
 from auth.auth_utils import get_authenticated_user_details
 from services.history_sql_service import HistorySqlService
 from common.logging.event_utils import track_event_if_configured
@@ -54,7 +55,10 @@ async def list_conversations(
         logger.info(
             f"Historyfab list-API called | user_id: {user_id}, offset: {offset}, limit: {limit}"
         )
-
+        
+        chat_service = ChatService(request)
+        await chat_service.adjust_data_dates()
+ 
         # Get conversations
         conversations = await history_service.get_conversations(
             user_id, offset=offset, limit=limit
