@@ -216,7 +216,6 @@ class ChatWithDataPlugin:
                         break
 
                 project_client.agents.threads.delete(thread_id=thread.id)
-        except Exception as e:
-            print(f"Error in get_answers_from_calltranscripts: {e}", flush=)
+        except Exception:
             return "Details could not be retrieved. Please try again later."
         return answer
