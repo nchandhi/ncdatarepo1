@@ -1,39 +1,92 @@
-"""Plugin for handling chat interactions with data sources using Azure OpenAI and Azure AI Search.
-
-This module provides functions for:
-- Responding to greetings and general questions.
-- Generating SQL queries and fetching results from a database.
-- Answering questions using call transcript data from Azure AI Search.
+"""
+Plugin for chat interactions with data using AI agents.
 """
 
-import re
-from typing import Annotated, Dict, Any
 import ast
+import logging
+import os
+import re
+import struct
+from typing import Annotated, Any, Dict
 
+import pyodbc
+from azure.ai.agents.models import MessageRole, ListSortOrder, RunStepToolCallDetails
+from azure.identity.aio import DefaultAzureCredential
+from dotenv import load_dotenv
 from semantic_kernel.functions.kernel_function_decorator import kernel_function
-from azure.ai.agents.models import (
-    ListSortOrder,
-    MessageRole,
-    RunStepToolCallDetails)
 
-from common.database.sqldb_service import execute_sql_query
-from common.config.config import Config
-from agents.search_agent_factory import SearchAgentFactory
-from agents.sql_agent_factory import SQLAgentFactory
+from agent_factory import AgentFactory, AgentType
+
+load_dotenv()
+
+async def get_db_connection():
+    """Get a connection to the SQL database"""
+    database = os.getenv("SQLDB_DATABASE")
+    server = os.getenv("SQLDB_SERVER")
+    username = os.getenv("SQLDB_USERNAME")
+    password = os.getenv("SQLDB_PASSWORD")
+    driver = "{ODBC Driver 17 for SQL Server}"
+    mid_id = os.getenv("SQLDB_USER_MID")
+
+    try:
+        async with DefaultAzureCredential(managed_identity_client_id=mid_id) as credential:
+            token = await credential.get_token("https://database.windows.net/.default")
+            token_bytes = token.token.encode("utf-16-LE")
+            token_struct = struct.pack(
+                f"<I{len(token_bytes)}s",
+                len(token_bytes),
+                token_bytes
+            )
+            SQL_COPT_SS_ACCESS_TOKEN = 1256
+
+            # Set up the connection
+            connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};"
+            conn = pyodbc.connect(
+                connection_string, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct}
+            )
+
+            logging.info("Connected using Default Azure Credential")
+            return conn
+    except pyodbc.Error as e:
+        logging.error("Failed with Default Credential: %s", str(e))
+        conn = pyodbc.connect(
+            f"DRIVER={driver};SERVER={server};DATABASE={database};UID={username};PWD={password}",
+            timeout=5)
+
+        logging.info("Connected using Username & Password")
+        return conn
+
+async def execute_sql_query(sql_query):
+    """
+    Executes a given SQL query and returns the result as a concatenated string.
+    """
+    conn = await get_db_connection()
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        cursor.execute(sql_query)
+        result = ''.join(str(row) for row in cursor.fetchall())
+        return result
+    except Exception as e:
+        logging.error("Error executing SQL query: %s", e)
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        conn.close()
 
 
 class ChatWithDataPlugin:
     """Plugin for handling chat interactions with data using various AI agents."""
 
     def __init__(self):
-        config = Config()
-        self.azure_openai_deployment_model = config.azure_openai_deployment_model
-        self.ai_project_endpoint = config.ai_project_endpoint
-        self.azure_ai_search_endpoint = config.azure_ai_search_endpoint
-        self.azure_ai_search_api_key = config.azure_ai_search_api_key
-        self.azure_ai_search_connection_name = config.azure_ai_search_connection_name
-        self.azure_ai_search_index = config.azure_ai_search_index
-        self.use_ai_project_client = config.use_ai_project_client
+        self.azure_openai_deployment_model = os.getenv("AZURE_OPENAI_DEPLOYMENT_MODEL")
+        self.ai_project_endpoint = os.getenv("AI_PROJECT_ENDPOINT")
+        self.azure_ai_search_endpoint = os.getenv("AZURE_AI_SEARCH_ENDPOINT")
+        self.azure_ai_search_api_key = os.getenv("AZURE_AI_SEARCH_API_KEY")
+        self.azure_ai_search_index = os.getenv("AZURE_AI_SEARCH_INDEX")
+        self.azure_ai_search_connection_name = os.getenv("AZURE_AI_SEARCH_CONNECTION_NAME")
+        self.use_ai_project_client = os.getenv("USE_AI_PROJECT_CLIENT", "False").lower() == "true"
 
     @kernel_function(name="ChatWithSQLDatabase",
                      description="Provides quantified results from the database.")
@@ -54,7 +107,7 @@ class ChatWithDataPlugin:
 
         query = input
         try:
-            agent_info = await SQLAgentFactory.get_agent()
+            agent_info = await AgentFactory.get_agent(AgentType.SQL)
             agent = agent_info["agent"]
             project_client = agent_info["client"]
 
@@ -112,7 +165,7 @@ class ChatWithDataPlugin:
         agent = None
 
         try:
-            agent_info = await SearchAgentFactory.get_agent()
+            agent_info = await AgentFactory.get_agent(AgentType.SEARCH)
             agent = agent_info["agent"]
             project_client = agent_info["client"]
 
@@ -161,7 +214,9 @@ class ChatWithDataPlugin:
                         answer["answer"] = msg.text_messages[-1].text.value
                         answer["answer"] = convert_citation_markers(answer["answer"])
                         break
+
                 project_client.agents.threads.delete(thread_id=thread.id)
-        except Exception:
+        except Exception as e:
+            print(f"Error in get_answers_from_calltranscripts: {e}", flush=)
             return "Details could not be retrieved. Please try again later."
         return answer
