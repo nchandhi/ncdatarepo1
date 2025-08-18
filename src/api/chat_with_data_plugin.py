@@ -69,15 +69,6 @@ async def execute_sql_query(sql_query):
 class ChatWithDataPlugin:
     """Plugin for handling chat interactions with data using various AI agents."""
 
-    def __init__(self):
-        self.azure_openai_deployment_model = os.getenv("AZURE_OPENAI_DEPLOYMENT_MODEL")
-        self.ai_project_endpoint = os.getenv("AI_PROJECT_ENDPOINT")
-        self.azure_ai_search_endpoint = os.getenv("AZURE_AI_SEARCH_ENDPOINT")
-        self.azure_ai_search_api_key = os.getenv("AZURE_AI_SEARCH_API_KEY")
-        self.azure_ai_search_index = os.getenv("AZURE_AI_SEARCH_INDEX")
-        self.azure_ai_search_connection_name = os.getenv("AZURE_AI_SEARCH_CONNECTION_NAME")
-        self.use_ai_project_client = os.getenv("USE_AI_PROJECT_CLIENT", "False").lower() == "true"
-
     @kernel_function(name="ChatWithSQLDatabase",
                      description="Provides quantified results from the database.")
     async def get_sql_response(
