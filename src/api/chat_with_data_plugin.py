@@ -19,6 +19,7 @@ from agent_factory import AgentFactory, AgentType
 
 load_dotenv()
 
+
 async def get_db_connection():
     """Get a connection to the SQL database"""
     database = os.getenv("SQLDB_DATABASE")

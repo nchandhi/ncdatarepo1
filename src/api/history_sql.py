@@ -55,10 +55,11 @@ AZURE_OPENAI_DEPLOYMENT_MODEL = os.getenv("AZURE_OPENAI_DEPLOYMENT_MODEL")
 AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
 AZURE_OPENAI_RESOURCE = os.getenv("AZURE_OPENAI_RESOURCE")
 
+
 def track_event_if_configured(event_name: str, event_data: dict):
     """
     Track an event with Application Insights if configured.
-    
+
     Args:
         event_name (str): The name of the event to track.
         event_data (dict): The data to associate with the event.
@@ -73,7 +74,7 @@ def track_event_if_configured(event_name: str, event_data: dict):
 async def get_fabric_db_connection():
     """
     Get a connection to the SQL database.
-    
+
     Returns:
         Connection: Database connection object, or None if connection fails.
     """
@@ -86,7 +87,7 @@ async def get_fabric_db_connection():
     try:
         # logging.info("FABRIC-SQL-app_env: %s" % app_env)
         # Set up the connection
-        conn=None
+        conn = None
         connection_string = ""
         if app_env == 'dev':
             async with AzureCliCredential() as credential:
@@ -103,13 +104,13 @@ async def get_fabric_db_connection():
                 # token_struct = struct.pack("=I", len(exptoken)) + exptoken.encode("utf-8")
 
                 SQL_COPT_SS_ACCESS_TOKEN = 1256
-                connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};"  
-                conn = pyodbc.connect( connection_string, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct})              
+                connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};"
+                conn = pyodbc.connect(connection_string, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct})
         else:
             connection_string = fabric_sqldb_connection_string
             conn = pyodbc.connect(connection_string)
 
-        # logging.info("FABRIC-SQL-connection_string: %s" % connection_string)        
+        # logging.info("FABRIC-SQL-connection_string: %s" % connection_string)
         # logging.info("FABRIC-SQL-User: %s" % conn.getinfo(pyodbc.SQL_USER_NAME))
         # logging.info("FABRIC-SQL:Successfully Connected to Fabric SQL Database")
         return conn
@@ -117,17 +118,18 @@ async def get_fabric_db_connection():
         logging.info("FABRIC-SQL:Failed to connect Fabric SQL Database: %s", e)
         return None
 
+
 async def run_query_and_return_json(sql_query: str):
     """
     Execute SQL query and return results as JSON string.
-    
+
     Args:
         sql_query (str): The SQL query to execute.
-        
+
     Returns:
         str: JSON string containing query results, or None if an error occurs.
     """
-    # Connect to the database    
+    # Connect to the database
     conn = await get_fabric_db_connection()
     cursor = None
     try:
@@ -162,14 +164,15 @@ async def run_query_and_return_json(sql_query: str):
             cursor.close()
         conn.close()
 
+
 async def run_query_and_return_json_params(sql_query, params: Tuple[Any, ...] = ()):
     """
     Execute parameterized SQL query and return results as JSON string.
-    
+
     Args:
         sql_query (str): The SQL query to execute with parameter placeholders.
         params (Tuple[Any, ...]): Parameters to bind to the query.
-        
+
     Returns:
         str: JSON string containing query results, or None if an error occurs.
     """
@@ -197,7 +200,7 @@ async def run_query_and_return_json_params(sql_query, params: Tuple[Any, ...] = 
 
         # logging.info("FABRIC-SQLDBService-Param-JSON-QUERY: %s" % sql_query)
         # logging.info("FABRIC-SQLDBService-Param-JSON-RESULT: %s" % result)
-           
+
         return json.dumps(result, indent=2)
     except Exception as e:
         logging.error("Error executing SQL query: %s", e)
@@ -207,14 +210,15 @@ async def run_query_and_return_json_params(sql_query, params: Tuple[Any, ...] = 
             cursor.close()
         conn.close()
 
+
 async def run_nonquery_params(sql_query, params: Tuple[Any, ...] = ()):
     """
     Execute a SQL non-query operation like DELETE, INSERT, or UPDATE.
-    
+
     Args:
         sql_query (str): The SQL query to execute with parameter placeholders.
         params (Tuple[Any, ...]): Parameters to bind to the query.
-        
+
     Returns:
         bool: True if the operation was successful, False otherwise.
     """
@@ -236,18 +240,19 @@ async def run_nonquery_params(sql_query, params: Tuple[Any, ...] = ()):
             cursor.close()
         conn.close()
 
+
 async def run_query_params(sql_query, params: Tuple[Any, ...] = ()):
     """
     Execute parameterized SQL query and return results as list of dictionaries.
-    
+
     Args:
         sql_query (str): The SQL query to execute with parameter placeholders.
-        params (Tuple[Any, ...]): Parameters to bind to the query.
-        
+        params (Tuple[Any, ...): Parameters to bind to the query.
+
     Returns:
         list: List of dictionaries containing query results, or None if an error occurs.
     """
-    # Connect to the database    
+    # Connect to the database
     conn = await get_fabric_db_connection()
     cursor = None
     try:
@@ -271,7 +276,7 @@ async def run_query_params(sql_query, params: Tuple[Any, ...] = ()):
 
         # logging.info("FABRIC-SQLDBService-Param-QUERY: %s" % sql_query)
         # logging.info("FABRIC-SQLDBService-Param-RESULT: %s" % result)
-            
+
         return result
     except Exception as e:
         logging.error("Error executing SQL query: %s", e)
@@ -281,22 +286,24 @@ async def run_query_params(sql_query, params: Tuple[Any, ...] = ()):
             cursor.close()
         conn.close()
 
+
 # Configuration variable
 USE_CHAT_HISTORY_ENABLED = os.getenv("USE_CHAT_HISTORY_ENABLED", "true").lower() == "true"
+
 
 async def get_conversations(user_id, limit, sort_order="DESC", offset=0):
     """
     Retrieve conversations for a specific user with pagination and sorting.
-    
+
     Args:
         user_id (str): The ID of the user whose conversations to retrieve.
         limit (int): Maximum number of conversations to return.
         sort_order (str): Sort order for conversations ("DESC" or "ASC").
         offset (int): Number of conversations to skip for pagination.
-        
+
     Returns:
         list: List of conversation dictionaries.
-    
+
     Raises:
         Exception: If an error occurs during conversation retrieval.
     """
@@ -306,38 +313,39 @@ async def get_conversations(user_id, limit, sort_order="DESC", offset=0):
         if user_id:
             query = f"SELECT conversation_id, title FROM hst_conversations where userId = ? order by updatedAt {sort_order}"
             params = (user_id,)
-        else: # If no user_id is provided, return all conversations -- This is for local testing purposes
+        else:  # If no user_id is provided, return all conversations -- This is for local testing purposes
             query = f"SELECT conversation_id, title FROM hst_conversations ORDER BY updatedAt {sort_order}"
             params = ()
-        
+
         result = await run_query_params(query, params)
-        return result 
+        return result
     except Exception:
         logger.exception("Error in get_conversation")
         raise
 
+
 async def get_conversation_messages(user_id: str, conversation_id: str):
     """
     Retrieve all messages for a specific conversation.
-    
+
     Args:
         user_id (str): The ID of the user requesting the messages.
         conversation_id (str): The ID of the conversation to retrieve.
-        
+
     Returns:
         list: List of message dictionaries with deserialized citations, or None if an error occurs.
     """
-    try: 
+    try:
         if not conversation_id:
             logger.warning("No conversation_id found, cannot retrieve conversation messages.")
             return None
-        
+
         query = ""
         params = ()
         if user_id:
             query = "SELECT role, content, citations, feedback FROM hst_conversation_messages where userId = ? and conversation_id = ?"
             params = (user_id, conversation_id)
-        else: # If no user_id is provided, return all conversation messages -- This is for local testing purposes
+        else:  # If no user_id is provided, return all conversation messages -- This is for local testing purposes
             query = "SELECT role, content, citations, feedback FROM hst_conversation_messages where conversation_id = ?"
             params = (conversation_id,)
 
@@ -356,21 +364,22 @@ async def get_conversation_messages(user_id: str, conversation_id: str):
             else:
                 processed_message["citations"] = []
             processed_result.append(processed_message)
-        
+
         return processed_result
     except Exception:
         logger.exception(
             "Error retrieving conversation %s for user %s", conversation_id, user_id)
         return None
-        
+
+
 async def delete_conversation(user_id: str, conversation_id: str) -> bool:
     """
     Delete a specific conversation and all its messages for a user.
-    
+
     Args:
         user_id (str): The ID of the user who owns the conversation.
         conversation_id (str): The ID of the conversation to delete.
-        
+
     Returns:
         bool: True if the conversation was successfully deleted, False otherwise.
     """
@@ -378,19 +387,19 @@ async def delete_conversation(user_id: str, conversation_id: str) -> bool:
         if not conversation_id:
             logger.warning("No conversation_id found, cannot delete conversation.")
             return False
-                   
+
         if user_id is None:
             logger.warning("User ID is None, cannot delete conversation %s.", conversation_id)
-            return False            
+            return False
 
         query = "SELECT userId, conversation_id FROM hst_conversations where conversation_id = ?"
-        conversation = await run_query_params(query, (conversation_id,)) 
+        conversation = await run_query_params(query, (conversation_id,))
         # logger.info(f"FABRIC-DELETED-Retrieved conversation: {conversation}")
-        # Check if the conversation exists 
+        # Check if the conversation exists
         if not conversation or len(conversation) == 0:
             logger.warning("Conversation %s not found.", conversation_id)
-            return False    
-       
+            return False
+
         # If the userId in the conversation does not match the user_id, deny access
         if conversation and conversation[0]["userId"] != user_id:
             logger.warning(
@@ -400,11 +409,11 @@ async def delete_conversation(user_id: str, conversation_id: str) -> bool:
         params = (user_id, conversation_id)
         # Delete associated messages first (if applicable)
         query_m = "DELETE FROM hst_conversation_messages where userId = ?  and conversation_id = ?"
-        await run_nonquery_params(query_m, params)            
+        await run_nonquery_params(query_m, params)
 
         # Delete the conversation itself
         query_m = "DELETE FROM hst_conversations where userId = ?  and conversation_id = ?"
-        await run_nonquery_params(query_m, params) 
+        await run_nonquery_params(query_m, params)
 
         logger.info("Successfully deleted conversation %s.", conversation_id)
         return True
@@ -413,13 +422,14 @@ async def delete_conversation(user_id: str, conversation_id: str) -> bool:
         logger.exception("Error deleting conversation %s: %s", conversation_id, e)
         return False
 
+
 async def delete_all_conversations(user_id: str) -> bool:
     """
     Delete all conversations and messages for a specific user.
-    
+
     Args:
         user_id (str): The ID of the user whose conversations should be deleted.
-        
+
     Returns:
         bool: True if all conversations were successfully deleted, False otherwise.
     """
@@ -447,16 +457,17 @@ async def delete_all_conversations(user_id: str) -> bool:
     except Exception as e:
         logger.exception("Error deleting all conversations for user %s: %s", user_id, e)
         return False
-        
+
+
 async def rename_conversation(user_id: str, conversation_id, title) -> bool:
     """
     Update the title of a specific conversation.
-    
+
     Args:
         user_id (str): The ID of the user who owns the conversation.
         conversation_id (str): The ID of the conversation to rename.
         title (str): The new title for the conversation.
-        
+
     Returns:
         bool: True if the conversation was successfully renamed, False otherwise.
     """
@@ -468,39 +479,40 @@ async def rename_conversation(user_id: str, conversation_id, title) -> bool:
         if user_id is None:
             logger.warning("User ID is None, cannot rename title of the conversation %s.", conversation_id)
             return False
-    
+
         if title is None:
             logger.warning("Title is None, cannot rename title of the conversation %s.", conversation_id)
             return False
-    
-        query = "SELECT userId, conversation_id FROM hst_conversations where conversation_id = ?"
-        conversation = await run_query_params(query, (conversation_id,)) 
 
-         # Check if the conversation exists 
+        query = "SELECT userId, conversation_id FROM hst_conversations where conversation_id = ?"
+        conversation = await run_query_params(query, (conversation_id,))
+
+        # Check if the conversation exists
         if not conversation or len(conversation) == 0:
             logger.warning("Conversation %s not found.", conversation_id)
-            return False    
-       
+            return False
+
         # Check if the user has permission to delete it
         if conversation and conversation[0]["userId"] != user_id:
             logger.warning(
                 "User %s does not have permission to delete %s.", user_id, conversation_id)
             return False
-        
-        # Update the title of the conversation 
+
+        # Update the title of the conversation
         query_t = "UPDATE hst_conversations SET title = ? WHERE userId = ?  and conversation_id = ?"
         await run_nonquery_params(query_t, (title, user_id, conversation_id))
 
         logger.info("Successfully updated title of conversation %s to '%s'.", conversation_id, title)
-        return True  
+        return True
     except Exception as e:
         logger.exception("Error updating title of conversation %s to '%s': %s", conversation_id, title, e)
         return False
 
+
 def init_openai_client():
     """
     Initialize and return an Azure OpenAI client.
-    
+
     Returns:
         AsyncAzureOpenAI: Configured Azure OpenAI client instance.
     """
@@ -529,12 +541,13 @@ def init_openai_client():
         )
     except Exception:
         logger.exception("Failed to initialize Azure OpenAI client")
-        raise    
+        raise
+
 
 async def generate_title(conversation_messages):
     """
     Generate a concise title for a conversation using Azure OpenAI service.
-    
+
     Args:
         conversation_messages (list): List of messages in the conversation.
 
@@ -564,18 +577,19 @@ async def generate_title(conversation_messages):
         logger.error("Error generating title")
         return messages[-2]["content"]
 
+
 async def create_conversation(user_id, title="", conversation_id=None):
     """
     Create a new conversation or return existing one if it already exists.
-    
+
     Args:
         user_id (str): The ID of the user creating the conversation.
         title (str): The title for the conversation. Defaults to empty string.
         conversation_id (str): The ID for the conversation. Generated if None.
-        
+
     Returns:
         bool: True if conversation was created successfully, existing conversation if it already exists.
-    
+
     Raises:
         Exception: If an error occurs during conversation creation.
     """
@@ -596,7 +610,7 @@ async def create_conversation(user_id, title="", conversation_id=None):
         if existing_conversation and len(existing_conversation) > 0:
             logger.info("Conversation with ID %s already exists.", conversation_id)
             return existing_conversation
-        
+
         # utc_now = datetime.now(datetime.timezone.utc).isoformat()
         utc_now = datetime.utcnow().isoformat()
         query = "INSERT INTO hst_conversations (userId, conversation_id, title, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)"
@@ -606,21 +620,22 @@ async def create_conversation(user_id, title="", conversation_id=None):
         return resp
     except Exception:
         logger.exception("Error in create_conversation")
-        raise  
-        
+        raise
+
+
 async def create_message(uuid, conversation_id, user_id, input_message: dict):
     """
     Create a new message in a conversation.
-    
+
     Args:
         uuid (str): Unique identifier for the message.
         conversation_id (str): The ID of the conversation to add the message to.
         user_id (str): The ID of the user creating the message.
         input_message (dict): Dictionary containing message data including role, content, and citations.
-        
+
     Returns:
         bool: True if the message was created successfully, False otherwise.
-    
+
     Raises:
         Exception: If an error occurs during message creation.
     """
@@ -633,28 +648,28 @@ async def create_message(uuid, conversation_id, user_id, input_message: dict):
         if not conversation_id:
             logger.warning("No conversation_id found, cannot create conversation message.")
             return None
-        
+
         # Ensure the conversation exists
         query = "SELECT * FROM hst_conversations where conversation_id = ?"
         exist_conversation = await run_query_params(query, (conversation_id,))
         if not exist_conversation or len(exist_conversation) == 0:
             logger.error("Conversation not found for ID: %s", conversation_id)
             return None
-        
+
         # query = f"SELECT * FROM hst_conversations where conversation_id = ?"
         # conversation = await run_query_and_return_json_params(query, (conversation_id,))
         # if not conversation:
         #     logger.error(f"Conversation not found for ID: {conversation_id}")
         #     return None
-        
+
         # logger.info(f"FABRIC-UPDATED-create_message-conversation_id: {conversation_id}")
-       
+
         utc_now = datetime.utcnow().isoformat()
         # if self.enable_message_feedback:
-        #     message["feedback"] = "" 
+        #     message["feedback"] = ""
         # todo
         feedback = ""
-        
+
         # Extract citations from input_message
         citations_json = ""
         if "citations" in input_message and input_message["citations"]:
@@ -664,7 +679,7 @@ async def create_message(uuid, conversation_id, user_id, input_message: dict):
             except (TypeError, ValueError) as e:
                 logger.warning("Failed to serialize citations: %s", e)
                 citations_json = ""
-        
+
         query = (
             "INSERT INTO hst_conversation_messages ("
             "userId, "
@@ -682,7 +697,7 @@ async def create_message(uuid, conversation_id, user_id, input_message: dict):
                   input_message["content"], citations_json, feedback, utc_now, utc_now)
         resp = await run_nonquery_params(query, params)
         # logger.info("FABRIC-Created conversation status: %s, conversation_id: %s, message ID: %s, Content: %s",
-        #             resp, conversation_id, input_message["id"], input_message["content"])            
+        #             resp, conversation_id, input_message["id"], input_message["content"])
         if resp:
             # Update the conversation's updatedAt timestamp
             query_t = "UPDATE hst_conversations SET updatedAt = ? WHERE conversation_id = ?"
@@ -693,19 +708,20 @@ async def create_message(uuid, conversation_id, user_id, input_message: dict):
             return False
     except Exception:
         logger.exception("Error in create_message")
-        raise  
-   
+        raise
+
+
 async def update_conversation(user_id: str, request_json: dict):
     """
     Update conversation with new messages or create new conversation if it doesn't exist.
-    
+
     Args:
         user_id (str): The ID of the user updating the conversation.
         request_json (dict): Dictionary containing conversation_id and messages to add.
-        
+
     Returns:
         dict: Dictionary containing conversation id, title, and updatedAt timestamp, or None if update fails.
-    
+
     Raises:
         HTTPException: If validation fails or required messages are not found.
         Exception: If an error occurs during conversation update.
@@ -718,19 +734,19 @@ async def update_conversation(user_id: str, request_json: dict):
             logger.warning("No User ID found, cannot update conversation.")
             return None
 
-        # conversation = None 
+        # conversation = None
         query = "SELECT * FROM hst_conversations where conversation_id = ?"
         conversation = await run_query_params(query, (conversation_id,))
 
         # logger.info(f"FABRIC-UPDATED-Retrieved conversation: {conversation}")
-        
+
         if not conversation or len(conversation) == 0:
             title = await generate_title(messages)
-            conversationCreated = await create_conversation(user_id=user_id, conversation_id=conversation_id, title=title)
+            await create_conversation(user_id=user_id, conversation_id=conversation_id, title=title)
             # logger.info(f"FABRIC-UPDATED-created conversation: {conversationCreated}")
-        
+
         # Format the incoming message object in the "chat/completions" messages format then write it to the
-        # conversation history 
+        # conversation history
         # logger.info(f"FABRIC-UPDATED-conversation_id before creating message: {conversation_id}")
         messages = request_json["messages"]
         if len(messages) > 0 and messages[0]["role"] == "user":
@@ -748,7 +764,7 @@ async def update_conversation(user_id: str, request_json: dict):
                 user_id=user_id,
                 input_message=user_message,
             )
-           
+
             if not createdMessageValue:
                 logger.warning("Conversation not found for ID: %s", conversation_id)
                 raise HTTPException(
@@ -783,20 +799,20 @@ async def update_conversation(user_id: str, request_json: dict):
             logger.warning("No assistant message found in request")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Assistant message not found")                
-        
+                detail="Assistant message not found")
+
         queryReturn = "SELECT * FROM hst_conversations where conversation_id = ?"
         conversationUpdated = await run_query_params(queryReturn, (conversation_id,))
 
         logger.info("FABRIC-UPDATED-conversationUpdated: %s", conversationUpdated)
-        if conversationUpdated and len(conversationUpdated) >0:
+        if conversationUpdated and len(conversationUpdated) > 0:
             return {
-                "id":  conversationUpdated[0].get("conversation_id"),
+                "id": conversationUpdated[0].get("conversation_id"),
                 "title": conversationUpdated[0].get("title"),
                 "updatedAt": conversationUpdated[0].get("updatedAt")}
         else:
             return None
-        
+
     except Exception:
         logger.exception("Error in update_conversation")
         raise
@@ -810,21 +826,21 @@ async def list_conversations(
 ):
     """
     List conversations for authenticated user with pagination.
-    
+
     Args:
         request (Request): FastAPI request object containing authentication headers.
         offset (int): Number of conversations to skip for pagination.
         limit (int): Maximum number of conversations to return.
-        
+
     Returns:
         JSONResponse: Response containing list of conversations or error message.
-    
+
     Raises:
         HTTPException: If authentication fails or validation errors occur.
     """
     try:
         await adjust_processed_data_dates()
-        
+
         authenticated_user = get_authenticated_user_details(
             request_headers=request.headers)
         user_id = authenticated_user["user_principal_id"]
@@ -834,7 +850,7 @@ async def list_conversations(
         # Get conversations
         conversations = await get_conversations(user_id, offset=offset, limit=limit)
         # logging.info("FABRIC-API-list-Conv: %s" % conversations)
-        if user_id:            
+        if user_id:
             track_event_if_configured("ConversationsListed", {
                 "user_id": user_id,
                 "offset": offset,
@@ -853,18 +869,19 @@ async def list_conversations(
             span.set_status(Status(StatusCode.ERROR, str(e)))
         return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)
 
+
 @router.get("/read")
 async def get_conversation_messages_endpoint(request: Request, id: str = Query(...)):
     """
     Get messages for a specific conversation.
-    
+
     Args:
         request (Request): FastAPI request object containing authentication headers.
         id (str): The conversation ID to retrieve messages for.
-        
+
     Returns:
         JSONResponse: Response containing conversation messages or error message.
-    
+
     Raises:
         HTTPException: If authentication fails, conversation not found, or validation errors occur.
     """
@@ -872,7 +889,7 @@ async def get_conversation_messages_endpoint(request: Request, id: str = Query(.
         authenticated_user = get_authenticated_user_details(
             request_headers=request.headers)
         user_id = authenticated_user["user_principal_id"]
-       
+
         conversation_id = id
 
         if not conversation_id:
@@ -897,13 +914,13 @@ async def get_conversation_messages_endpoint(request: Request, id: str = Query(.
                 status_code=404,
                 detail=f"Conversation {conversation_id} was not found. It either does not exist or the user does not have access to it."
             )
-        
+
         if user_id:
             track_event_if_configured("ConversationRead", {
                 "user_id": user_id,
                 "conversation_id": conversation_id,
                 "message_count": len(conversationMessages)
-            })       
+            })
         return JSONResponse(
             content={
                 "conversation_id": conversation_id,
@@ -918,19 +935,20 @@ async def get_conversation_messages_endpoint(request: Request, id: str = Query(.
             span.record_exception(e)
             span.set_status(Status(StatusCode.ERROR, str(e)))
         return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)
-    
+
+
 @router.delete("/delete")
 async def delete_conversation_endpoint(request: Request, id: str = Query(...)):
     """
     Delete a specific conversation and its messages.
-    
+
     Args:
         request (Request): FastAPI request object containing authentication headers.
         id (str): The conversation ID to delete.
-        
+
     Returns:
         JSONResponse: Response indicating success or failure.
-    
+
     Raises:
         HTTPException: If authentication fails, conversation not found, or user lacks permission.
     """
@@ -939,7 +957,7 @@ async def delete_conversation_endpoint(request: Request, id: str = Query(...)):
         authenticated_user = get_authenticated_user_details(
             request_headers=request.headers)
         user_id = authenticated_user["user_principal_id"]
-        
+
         conversation_id = id
         if not conversation_id:
             track_event_if_configured("DeleteConversationValidationError", {
@@ -980,18 +998,19 @@ async def delete_conversation_endpoint(request: Request, id: str = Query(...)):
             span.record_exception(e)
             span.set_status(Status(StatusCode.ERROR, str(e)))
         return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)
-    
+
+
 @router.delete("/delete_all")
 async def delete_all_conversations_endpoint(request: Request):
     """
     Delete all conversations for authenticated user.
-    
+
     Args:
         request (Request): FastAPI request object containing authentication headers.
-        
+
     Returns:
         JSONResponse: Response indicating success or failure.
-    
+
     Raises:
         HTTPException: If authentication fails or no conversations found.
     """
@@ -1023,7 +1042,7 @@ async def delete_all_conversations_endpoint(request: Request):
                 track_event_if_configured("AllConversationsDeleted", {
                     "user_id": user_id,
                     "deleted_count": len(conversations)
-                }) 
+                })
             return JSONResponse(
                 content={
                     "message": f"Successfully deleted all conversations for user {user_id}"},
@@ -1046,18 +1065,19 @@ async def delete_all_conversations_endpoint(request: Request):
             span.record_exception(e)
             span.set_status(Status(StatusCode.ERROR, str(e)))
         return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)
-    
+
+
 @router.post("/rename")
 async def rename_conversation_endpoint(request: Request):
     """
     Rename a conversation's title.
-    
+
     Args:
         request (Request): FastAPI request object containing authentication headers and JSON body with conversation_id and title.
-        
+
     Returns:
         JSONResponse: Response indicating success or failure.
-    
+
     Raises:
         HTTPException: If authentication fails, validation errors occur, or conversation not found.
     """
@@ -1070,7 +1090,7 @@ async def rename_conversation_endpoint(request: Request):
         request_json = await request.json()
         conversation_id = request_json.get("conversation_id")
         title = request_json.get("title")
-        
+
         if not conversation_id:
             if user_id:
                 track_event_if_configured("RenameConversationValidationError", {
@@ -1094,7 +1114,7 @@ async def rename_conversation_endpoint(request: Request):
                     "user_id": user_id,
                     "conversation_id": conversation_id,
                     "new_title": title
-                }) 
+                })
             return JSONResponse(
                 content={
                     "message": f"Successfully renamed title of conversation {conversation_id} to title '{title}'"},
@@ -1119,18 +1139,19 @@ async def rename_conversation_endpoint(request: Request):
             span.record_exception(e)
             span.set_status(Status(StatusCode.ERROR, str(e)))
         return JSONResponse(content={"error": "An internal error has occurred!"}, status_code=500)
- 
+
+
 @router.post("/update")
 async def update_conversation_endpoint(request: Request):
     """
     Update conversation with new messages.
-    
+
     Args:
         request (Request): FastAPI request object containing authentication headers and JSON body with conversation data.
-        
+
     Returns:
         JSONResponse: Response containing updated conversation details or error message.
-    
+
     Raises:
         HTTPException: If authentication fails or validation errors occur.
     """
@@ -1138,7 +1159,7 @@ async def update_conversation_endpoint(request: Request):
         authenticated_user = get_authenticated_user_details(
             request_headers=request.headers)
         user_id = authenticated_user["user_principal_id"]
-        
+
         # Parse request body
         request_json = await request.json()
         conversation_id = request_json.get("conversation_id")
@@ -1152,11 +1173,11 @@ async def update_conversation_endpoint(request: Request):
         if not update_response:
             if user_id:
                 track_event_if_configured("ConversationUpdated", {
-                "user_id": user_id,
-                "conversation_id": conversation_id,
-                "title": update_response["title"]
-            })
-            raise HTTPException(status_code=500, detail="Failed to update conversation")            
+                    "user_id": user_id,
+                    "conversation_id": conversation_id,
+                    "title": update_response["title"]
+                })
+            raise HTTPException(status_code=500, detail="Failed to update conversation")
 
         return JSONResponse(
             content={

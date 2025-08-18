@@ -68,6 +68,41 @@ logging.getLogger("azure.monitor.opentelemetry.exporter.export._base").setLevel(
     logging.WARNING
 )
 
+
+class ExpCache(TTLCache):
+    """Extended TTLCache that deletes Azure AI agent threads when items expire."""
+
+    def __init__(self, *args, agent=None, **kwargs):
+        """Initialize cache with optional agent for thread cleanup."""
+        super().__init__(*args, **kwargs)
+        self.agent = agent
+
+    def expire(self, time=None):
+        """Remove expired items and delete associated Azure AI threads."""
+        items = super().expire(time)
+        for key, thread_id in items:
+            try:
+                if self.agent:
+                    thread = AzureAIAgentThread(client=self.agent.client, thread_id=thread_id)
+                    asyncio.create_task(thread.delete())
+                    logger.info("Thread deleted: %s", thread_id)
+            except Exception as e:
+                logger.error("Failed to delete thread for key %s: %s", key, e)
+        return items
+
+    def popitem(self):
+        """Remove item using LRU eviction and delete associated Azure AI thread."""
+        key, thread_id = super().popitem()
+        try:
+            if self.agent:
+                thread = AzureAIAgentThread(client=self.agent.client, thread_id=thread_id)
+                asyncio.create_task(thread.delete())
+                logger.info("Thread deleted (LRU evict): %s", thread_id)
+        except Exception as e:
+            logger.error("Failed to delete thread for key %s (LRU evict): %s", key, e)
+        return key, thread_id
+
+
 async def get_db_connection():
     """Get a connection to the SQL database"""
     database = os.getenv("SQLDB_DATABASE")
@@ -93,6 +128,7 @@ async def get_db_connection():
 
         logging.info("Connected using Default Azure Credential")
         return conn
+
 
 async def adjust_processed_data_dates():
     """
@@ -137,38 +173,6 @@ async def adjust_processed_data_dates():
             cursor.close()
         conn.close()
 
-class ExpCache(TTLCache):
-    """Extended TTLCache that deletes Azure AI agent threads when items expire."""
-    
-    def __init__(self, *args, agent=None, **kwargs):
-        """Initialize cache with optional agent for thread cleanup."""
-        super().__init__(*args, **kwargs)
-        self.agent = agent
-
-    def expire(self, time=None):
-        """Remove expired items and delete associated Azure AI threads."""
-        items = super().expire(time)
-        for key, thread_id in items:
-            try:
-                if self.agent:
-                    thread = AzureAIAgentThread(client=self.agent.client, thread_id=thread_id)
-                    asyncio.create_task(thread.delete())
-                    logger.info("Thread deleted: %s", thread_id)
-            except Exception as e:
-                logger.error("Failed to delete thread for key %s: %s", key, e)
-        return items
-
-    def popitem(self):
-        """Remove item using LRU eviction and delete associated Azure AI thread."""
-        key, thread_id = super().popitem()
-        try:
-            if self.agent:
-                thread = AzureAIAgentThread(client=self.agent.client, thread_id=thread_id)
-                asyncio.create_task(thread.delete())
-                logger.info("Thread deleted (LRU evict): %s", thread_id)
-        except Exception as e:
-            logger.error("Failed to delete thread for key %s (LRU evict): %s", key, e)
-        return key, thread_id
 
 def track_event_if_configured(event_name: str, event_data: dict):
     """Track event to Application Insights if configured."""
@@ -177,6 +181,7 @@ def track_event_if_configured(event_name: str, event_data: dict):
         track_event(event_name, event_data)
     else:
         logging.warning("Skipping track_event for %s as Application Insights is not configured", event_name)
+
 
 def format_stream_response(chat_completion_chunk, history_metadata, apim_request_id):
     """Format chat completion chunk into standardized response object."""
@@ -214,16 +219,6 @@ def format_stream_response(chat_completion_chunk, history_metadata, apim_request
                     return response_obj
 
     return {}
-
-# Global thread cache
-thread_cache = None
-
-def get_thread_cache(agent):
-    """Get or create the global thread cache."""
-    global thread_cache
-    if thread_cache is None:
-        thread_cache = ExpCache(maxsize=1000, ttl=3600.0, agent=agent)
-    return thread_cache
 
 
 async def process_rag_response(rag_response, query):
@@ -282,6 +277,18 @@ async def process_rag_response(rag_response, query):
         return {"error": "Chart could not be generated from this data. Please ask a different question."}
 
 
+# Global thread cache
+thread_cache = None
+
+
+def get_thread_cache(agent):
+    """Get or create the global thread cache."""
+    global thread_cache
+    if thread_cache is None:
+        thread_cache = ExpCache(maxsize=1000, ttl=3600.0, agent=agent)
+    return thread_cache
+
+
 async def stream_openai_text(conversation_id: str, query: str, agent) -> AsyncGenerator[str, None]:
     """
     Get a streaming text response from OpenAI.
@@ -294,7 +301,7 @@ async def stream_openai_text(conversation_id: str, query: str, agent) -> AsyncGe
 
         cache = get_thread_cache(agent)
         thread_id = cache.get(conversation_id, None)
-        
+
         if thread_id:
             thread = AzureAIAgentThread(client=agent.client, thread_id=thread_id)
 
@@ -444,9 +451,9 @@ async def conversation(request: Request):
             term in query.lower()
             for term in ["chart", "graph", "visualize", "plot"]
         )
-        
+
         agent = request.app.state.agent
-        
+
         if not is_chart_query:
             result = await stream_chat_request(request_json, conversation_id, query, agent)
             track_event_if_configured(

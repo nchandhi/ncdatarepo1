@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from openai import AsyncAzureOpenAI
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
- 
+
 from chat import adjust_processed_data_dates
 from auth.auth_utils import get_authenticated_user_details
 

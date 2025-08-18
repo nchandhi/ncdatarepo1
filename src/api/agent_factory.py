@@ -1,6 +1,6 @@
 """
 Factory module for creating and managing different types of AI agents
-in a call center knowledge mining solution. 
+in a call center knowledge mining solution.
 
 Includes conversation agents with semantic kernel integration, search agents
 with Azure AI Search, SQL agents for database queries, and chart agents for
@@ -21,6 +21,7 @@ from azure.identity.aio import DefaultAzureCredential as AsyncDefaultAzureCreden
 
 load_dotenv()
 
+
 class AgentType(Enum):
     """Enum for different agent types."""
     CONVERSATION = "conversation"
@@ -31,7 +32,7 @@ class AgentType(Enum):
 
 class AgentFactory:
     """Agent Factory class for creating and managing all types of agent instances."""
-    
+
     _locks: Dict[AgentType, asyncio.Lock] = {
         agent_type: asyncio.Lock() for agent_type in AgentType
     }
@@ -89,7 +90,7 @@ class AgentFactory:
         from chat_with_data_plugin import ChatWithDataPlugin
 
         solution_name = os.getenv("SOLUTION_NAME", "")
-        
+
         ai_agent_settings = AzureAIAgentSettings()
         creds = AsyncDefaultAzureCredential()
         client = AzureAIAgent.create_client(credential=creds, endpoint=ai_agent_settings.endpoint)
@@ -129,7 +130,7 @@ class AgentFactory:
         azure_ai_search_index = os.getenv("AZURE_AI_SEARCH_INDEX")
         azure_openai_deployment_model = os.getenv("AZURE_OPENAI_DEPLOYMENT_MODEL")
         solution_name = os.getenv("SOLUTION_NAME", "")
-        
+
         project_client = AIProjectClient(
             endpoint=ai_project_endpoint,
             credential=DefaultAzureCredential(exclude_interactive_browser_credential=False),
@@ -182,7 +183,7 @@ class AgentFactory:
         ai_project_api_version = os.getenv("AZURE_AI_AGENT_API_VERSION", "2025-05-01")
         azure_openai_deployment_model = os.getenv("AZURE_OPENAI_DEPLOYMENT_MODEL")
         solution_name = os.getenv("SOLUTION_NAME", "")
-        
+
         instructions = '''You are an assistant that helps generate valid T-SQL queries.
         Generate a valid T-SQL query for the user's request using these tables:
         1. Table: km_processed_data
@@ -224,7 +225,7 @@ class AgentFactory:
         ai_project_api_version = os.getenv("AZURE_AI_AGENT_API_VERSION", "2025-05-01")
         azure_openai_deployment_model = os.getenv("AZURE_OPENAI_DEPLOYMENT_MODEL")
         solution_name = os.getenv("SOLUTION_NAME", "")
-        
+
         instructions = """You are an assistant that helps generate valid chart data to be shown using chart.js with version 4.4.4 compatible.
         Include chart type and chart options.
         Pick the best chart type for given data.
@@ -259,7 +260,7 @@ class AgentFactory:
     async def _delete_conversation_agent(cls, agent: AzureAIAgent):
         """Delete a conversation agent and its associated threads."""
         from chat import thread_cache
-        
+
         if thread_cache:
             for conversation_id, thread_id in list(thread_cache.items()):
                 try:
