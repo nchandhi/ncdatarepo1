@@ -23,38 +23,28 @@ async def get_db_connection():
     """Get a connection to the SQL database"""
     database = os.getenv("SQLDB_DATABASE")
     server = os.getenv("SQLDB_SERVER")
-    username = os.getenv("SQLDB_USERNAME")
-    password = os.getenv("SQLDB_PASSWORD")
     driver = "{ODBC Driver 17 for SQL Server}"
     mid_id = os.getenv("SQLDB_USER_MID")
 
-    try:
-        async with DefaultAzureCredential(managed_identity_client_id=mid_id) as credential:
-            token = await credential.get_token("https://database.windows.net/.default")
-            token_bytes = token.token.encode("utf-16-LE")
-            token_struct = struct.pack(
-                f"<I{len(token_bytes)}s",
-                len(token_bytes),
-                token_bytes
-            )
-            SQL_COPT_SS_ACCESS_TOKEN = 1256
+    async with DefaultAzureCredential(managed_identity_client_id=mid_id) as credential:
+        token = await credential.get_token("https://database.windows.net/.default")
+        token_bytes = token.token.encode("utf-16-LE")
+        token_struct = struct.pack(
+            f"<I{len(token_bytes)}s",
+            len(token_bytes),
+            token_bytes
+        )
+        SQL_COPT_SS_ACCESS_TOKEN = 1256
 
-            # Set up the connection
-            connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};"
-            conn = pyodbc.connect(
-                connection_string, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct}
-            )
-
-            logging.info("Connected using Default Azure Credential")
-            return conn
-    except pyodbc.Error as e:
-        logging.error("Failed with Default Credential: %s", str(e))
+        # Set up the connection
+        connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};"
         conn = pyodbc.connect(
-            f"DRIVER={driver};SERVER={server};DATABASE={database};UID={username};PWD={password}",
-            timeout=5)
+            connection_string, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct}
+        )
 
-        logging.info("Connected using Username & Password")
+        logging.info("Connected using Default Azure Credential")
         return conn
+
 
 async def execute_sql_query(sql_query):
     """
