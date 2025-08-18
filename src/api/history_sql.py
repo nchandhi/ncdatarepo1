@@ -597,10 +597,10 @@ async def create_conversation(user_id, title="", conversation_id=None):
             logger.info("Conversation with ID %s already exists.", conversation_id)
             return existing_conversation
         
-        # utcNow = datetime.now(datetime.timezone.utc).isoformat()
-        utcNow = datetime.utcnow().isoformat()
+        # utc_now = datetime.now(datetime.timezone.utc).isoformat()
+        utc_now = datetime.utcnow().isoformat()
         query = "INSERT INTO hst_conversations (userId, conversation_id, title, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)"
-        params = (user_id, conversation_id, title, utcNow, utcNow)
+        params = (user_id, conversation_id, title, utc_now, utc_now)
         resp = await run_nonquery_params(query, params)
         # logger.info("Created conversation with ID: %s", conversation_id)
         return resp
@@ -649,7 +649,7 @@ async def create_message(uuid, conversation_id, user_id, input_message: dict):
         
         # logger.info(f"FABRIC-UPDATED-create_message-conversation_id: {conversation_id}")
        
-        utcNow = datetime.utcnow().isoformat()
+        utc_now = datetime.utcnow().isoformat()
         # if self.enable_message_feedback:
         #     message["feedback"] = "" 
         # todo
@@ -679,14 +679,14 @@ async def create_message(uuid, conversation_id, user_id, input_message: dict):
             ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
         params = (user_id, conversation_id, input_message["role"], input_message["id"],
-                  input_message["content"], citations_json, feedback, utcNow, utcNow)
+                  input_message["content"], citations_json, feedback, utc_now, utc_now)
         resp = await run_nonquery_params(query, params)
         # logger.info("FABRIC-Created conversation status: %s, conversation_id: %s, message ID: %s, Content: %s",
         #             resp, conversation_id, input_message["id"], input_message["content"])            
         if resp:
             # Update the conversation's updatedAt timestamp
             query_t = "UPDATE hst_conversations SET updatedAt = ? WHERE conversation_id = ?"
-            resp = await run_nonquery_params(query_t, (utcNow, conversation_id))
+            resp = await run_nonquery_params(query_t, (utc_now, conversation_id))
 
             return resp
         else:
