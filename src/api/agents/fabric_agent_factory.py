@@ -1,8 +1,9 @@
-from azure.identity import DefaultAzureCredential
+from azure.identity import DefaultAzureCredential, OnBehalfOfCredential
 from azure.ai.agents.models import FabricTool
 from azure.ai.projects import AIProjectClient
 from agents.agent_factory_base import BaseAgentFactory
 import logging
+from common.config.config import Config
 
 logging.basicConfig(level=logging.INFO)
 
@@ -23,10 +24,26 @@ class FabricAgentFactory(BaseAgentFactory):
         """
         try:
             print("FABRIC-AGENT-FACTORY: Starting agent creation process...")
-            
+            credential = None
+            app_env = config.app_env
+            # print("FABRIC-AGENT-FACTORY-ENV: %s" % app_env, flush=True)
+            # print("FABRIC-AGENT-FACTORY-client_id: %s" % config.api_client_id, flush=True)
+            # print("FABRIC-AGENT-FACTORY-tenant_id: %s" % config.api_tenant_id, flush=True)
+            # print("FABRIC-AGENT-FACTORY-user_assertion: %s" % Config.api_access_token, flush=True)
+            print("FABRIC-AGENT-FACTORY-user_assertion: %s" % Config.api_access_token[:15], flush=True)
+            if app_env == 'dev':
+                credential = DefaultAzureCredential()
+            else:
+                credential = OnBehalfOfCredential(
+                    client_id=config.api_client_id,
+                    tenant_id=config.api_tenant_id,
+                    client_secret=config.api_client_secret,
+                    user_assertion=Config.api_access_token
+                )
+
             project_client = AIProjectClient(
                 endpoint=config.ai_project_endpoint,
-                credential=DefaultAzureCredential(),
+                credential=credential,
             )
 
             # Find fabric connection by looking for fabric_dataagent type
@@ -45,11 +62,13 @@ class FabricAgentFactory(BaseAgentFactory):
             # print("FABRIC-CustomerSalesKernel-fabrictool created", flush=True)
             
             instructions = '''- Purpose: Analyze customer information.
-                    - Use this to highlight customer details.
+                    - Highlight key customer details.
+                    - Summarize customer interactions.
+                    - Provide a brief overview of policy information.
+                    - Highlight claims-related information.
                     - ✅ Example queries the Fabric tool can answer:
                         - What is the total number of customers?
-                        - how many sales orders?
-                        - How many products?'''
+                        - What is the maximum premium paid by any customer?'''
 
             # Create agent WITHOUT the 'with' statement to keep the client open
             agents_client = project_client.agents
@@ -68,7 +87,7 @@ class FabricAgentFactory(BaseAgentFactory):
             }
             
         except Exception as e:
-            logging.error(f"FABRIC-AGENT-FACTORY: Error creating FabricAgentFactory agent: {type(e).__name__}: {str(e)}")
+            logging.error(f"FABRIC-AGENT-FACTORY-ERROR: Error creating FabricAgentFactory agent: {type(e).__name__}: {str(e)}")
             raise
 
     @classmethod

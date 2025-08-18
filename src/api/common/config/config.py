@@ -8,9 +8,10 @@ other related services.
 import os
 from dotenv import load_dotenv
 load_dotenv()
-
+# api_access_token = "" 
 
 class Config:
+    api_access_token = "sample_token"
     def __init__(self):
         # FabricSQL Database configuration
         self.fabric_sqldb_database = os.getenv("FABRIC_SQLDB_DATABASE")
@@ -52,3 +53,7 @@ class Config:
 
         self.solution_name = os.getenv("SOLUTION_NAME", "")
         self.app_env = os.getenv("APP_ENV", "prod").lower()
+        self.api_tenant_id = os.getenv("API_TENANT_ID", "")
+        self.api_client_id = os.getenv("API_CLIENT_ID", "")
+        self.api_client_secret = os.getenv("API_CLIENT_SECRET", "")
+        # self.api_access_token = "" 

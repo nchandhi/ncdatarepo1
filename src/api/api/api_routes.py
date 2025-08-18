@@ -6,6 +6,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 import requests
 # from api.models.input_models import ChartFilters
+from common.config.config import Config
 from services.chat_service import ChatService
 # from services.chart_service import ChartService
 from common.logging.event_utils import track_event_if_configured
@@ -52,6 +53,13 @@ async def conversation(request: Request):
         last_rag_response = request_json.get("last_rag_response")
         conversation_id = request_json.get("conversation_id")
         logger.info(f"Received last_rag_response: {last_rag_response}")
+
+        #AVJ
+        auth_header = request.headers.get("authorization", "")
+        token = auth_header.replace("Bearer ", "").strip()
+        Config.api_access_token = token
+        # logger.info(f"CHAT-API-Received token: {token}")
+        # logger.info(f"CHAT-API-api_access_token: {Config.api_access_token}")
 
         query = request_json.get("messages")[-1].get("content")
         is_chart_query = any(

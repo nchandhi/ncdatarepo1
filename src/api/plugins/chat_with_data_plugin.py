@@ -169,7 +169,7 @@ class ChatWithDataPlugin:
             return "Details could not be retrieved. Please try again later."
         return answer
 
-    @kernel_function(name="ChatWithCustomerSales", description="Provides summaries or detailed explanations of customer sales.")
+    @kernel_function(name="ChatWithCustomerSales", description="Provides summaries or quantified result of customers, policy, claims, and customer communication only.")
     async def get_answers_from_customersales(
             self,
             question: Annotated[str, "the question"]

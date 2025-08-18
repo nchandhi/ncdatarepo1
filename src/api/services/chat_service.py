@@ -86,6 +86,11 @@ class ChatService:
         if ChatService.thread_cache is None:
             ChatService.thread_cache = ExpCache(maxsize=1000, ttl=3600.0, agent=self.agent)
 
+        # Initialize user assertion AVJ
+        # auth_header = request.headers.get("authorization", "")
+        # token = auth_header.replace("Bearer ", "").strip()
+        # config.api_access_token = token
+        
     async def process_rag_response(self, rag_response, query):
         """
         Uses the ChartAgent directly (agentic call) to extract chart data for Chart.js.

@@ -42,11 +42,20 @@ export async function getUserInfo(): Promise<UserInfo[]> {
   if (userId) {
     localStorage.setItem("userId", userId);
   }
+  const accessToken = payload[0]?.access_token;
+  if (accessToken) {
+    localStorage.setItem("access_token", accessToken);
+  }
   return payload;
 }
 
 function getUserIdFromLocalStorage(): string | null {
   return localStorage.getItem("userId");
+}
+
+
+function getAccessTokenFromLocalStorage(): string | null {
+  return localStorage.getItem("access_token");
 }
 
 export const historyRead = async (convId: string): Promise<ChatMessage[]> => {
@@ -221,6 +230,7 @@ export async function callConversationApi(
   abortSignal: AbortSignal
 ): Promise<Response> {
   const userId = getUserIdFromLocalStorage();
+  const accessToken = getAccessTokenFromLocalStorage();
   const endpoint = `/api/chat`;
   
   try {
@@ -229,6 +239,8 @@ export async function callConversationApi(
       headers: {
         "Content-Type": "application/json",
         "X-Ms-Client-Principal-Id": userId || "",
+        "Authorization": accessToken ? `Bearer ${accessToken}` : "",
+     
       },
       body: JSON.stringify({
         messages: options.messages,
