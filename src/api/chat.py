@@ -153,7 +153,7 @@ class ExpCache(TTLCache):
                 if self.agent:
                     thread = AzureAIAgentThread(client=self.agent.client, thread_id=thread_id)
                     asyncio.create_task(thread.delete())
-                    print(f"Thread deleted : {thread_id}")
+                    logger.info("Thread deleted: %s", thread_id)
             except Exception as e:
                 logger.error("Failed to delete thread for key %s: %s", key, e)
         return items
@@ -165,7 +165,7 @@ class ExpCache(TTLCache):
             if self.agent:
                 thread = AzureAIAgentThread(client=self.agent.client, thread_id=thread_id)
                 asyncio.create_task(thread.delete())
-                print(f"Thread deleted (LRU evict): {thread_id}")
+                logger.info("Thread deleted (LRU evict): %s", thread_id)
         except Exception as e:
             logger.error("Failed to delete thread for key %s (LRU evict): %s", key, e)
         return key, thread_id
@@ -173,7 +173,6 @@ class ExpCache(TTLCache):
 def track_event_if_configured(event_name: str, event_data: dict):
     """Track event to Application Insights if configured."""
     instrumentation_key = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
-    print(f"Instrumentation Key: {instrumentation_key}")
     if instrumentation_key:
         track_event(event_name, event_data)
     else:
@@ -255,7 +254,7 @@ async def process_rag_response(rag_response, query):
         )
 
         if run.status == "failed":
-            print(f"[Chart Agent] Run failed: {run.last_error}")
+            logger.error(f"[Chart Agent] Run failed: {run.last_error}")
             return {"error": "Chart could not be generated due to agent failure."}
 
         chart_json = ""

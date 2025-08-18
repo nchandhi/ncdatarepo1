@@ -67,7 +67,6 @@ AZURE_OPENAI_RESOURCE = os.getenv("AZURE_OPENAI_RESOURCE")
 def track_event_if_configured(event_name: str, event_data: dict):
     """Track events to Application Insights if configured."""
     instrumentation_key = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
-    print(f"Instrumentation Key: {instrumentation_key}")
     if instrumentation_key:
         track_event(event_name, event_data)
     else:
