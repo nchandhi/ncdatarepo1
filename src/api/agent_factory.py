@@ -76,7 +76,7 @@ class AgentFactory:
             raise ValueError(f"Unknown agent type: {agent_type}")
 
     @classmethod
-    async def _delete_agent_instance(cls, agent_type: AgentType, agent: object):
+    async def _delete_agent_instance(cls, agent_type: AgentType, agent: AzureAIAgent):
         """Delete the specified agent instance based on its type."""
         if agent_type == AgentType.CONVERSATION:
             await cls._delete_conversation_agent(agent)
@@ -258,9 +258,8 @@ class AgentFactory:
     @classmethod
     async def _delete_conversation_agent(cls, agent: AzureAIAgent):
         """Delete a conversation agent and its associated threads."""
-        from chat import ChatService
+        from chat import thread_cache
         
-        thread_cache = getattr(ChatService, "thread_cache", None)
         if thread_cache:
             for conversation_id, thread_id in list(thread_cache.items()):
                 try:
@@ -274,52 +273,3 @@ class AgentFactory:
     async def _delete_project_agent(cls, agent_wrapper: Dict[str, Any]):
         """Delete a project-based agent (search, sql, chart)."""
         agent_wrapper["client"].agents.delete_agent(agent_wrapper["agent"].id)
-
-
-# # Convenience methods for backward compatibility
-# class ConversationAgentFactory:
-#     """Backward compatibility wrapper for conversation agents."""
-    
-#     @classmethod
-#     async def get_agent(cls) -> AzureAIAgent:
-#         return await AgentFactory.get_agent(AgentType.CONVERSATION)
-    
-#     @classmethod
-#     async def delete_agent(cls):
-#         await AgentFactory.delete_agent(AgentType.CONVERSATION)
-
-
-# class SearchAgentFactory:
-#     """Backward compatibility wrapper for search agents."""
-    
-#     @classmethod
-#     async def get_agent(cls) -> Dict[str, Any]:
-#         return await AgentFactory.get_agent(AgentType.SEARCH)
-    
-#     @classmethod
-#     async def delete_agent(cls):
-#         await AgentFactory.delete_agent(AgentType.SEARCH)
-
-
-# class SQLAgentFactory:
-#     """Backward compatibility wrapper for SQL agents."""
-    
-#     @classmethod
-#     async def get_agent(cls) -> Dict[str, Any]:
-#         return await AgentFactory.get_agent(AgentType.SQL)
-    
-#     @classmethod
-#     async def delete_agent(cls):
-#         await AgentFactory.delete_agent(AgentType.SQL)
-
-
-# class ChartAgentFactory:
-#     """Backward compatibility wrapper for chart agents."""
-    
-#     @classmethod
-#     async def get_agent(cls) -> Dict[str, Any]:
-#         return await AgentFactory.get_agent(AgentType.CHART)
-    
-#     @classmethod
-#     async def delete_agent(cls):
-#         await AgentFactory.delete_agent(AgentType.CHART)

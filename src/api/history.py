@@ -14,8 +14,8 @@ from fastapi.responses import JSONResponse
 from openai import AsyncAzureOpenAI
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
-
-from chat import ChatService
+ 
+from chat import adjust_processed_data_dates
 from auth.auth_utils import get_authenticated_user_details
 
 router = APIRouter()
@@ -45,16 +45,37 @@ logging.getLogger("azure.monitor.opentelemetry.exporter.export._base").setLevel(
     logging.WARNING
 )
 
+# Configuration variables
+USE_CHAT_HISTORY_ENABLED = os.getenv("USE_CHAT_HISTORY_ENABLED", "false").strip().lower() == "true"
+AZURE_COSMOSDB_DATABASE = os.getenv("AZURE_COSMOSDB_DATABASE")
+AZURE_COSMOSDB_ACCOUNT = os.getenv("AZURE_COSMOSDB_ACCOUNT")
+AZURE_COSMOSDB_CONVERSATIONS_CONTAINER = os.getenv("AZURE_COSMOSDB_CONVERSATIONS_CONTAINER")
+AZURE_COSMOSDB_ENABLE_FEEDBACK = os.getenv("AZURE_COSMOSDB_ENABLE_FEEDBACK", "false").lower() == "true"
+CHAT_HISTORY_ENABLED = (
+    USE_CHAT_HISTORY_ENABLED
+    and AZURE_COSMOSDB_ACCOUNT
+    and AZURE_COSMOSDB_DATABASE
+    and AZURE_COSMOSDB_CONVERSATIONS_CONTAINER
+)
+
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+AZURE_OPENAI_DEPLOYMENT_MODEL = os.getenv("AZURE_OPENAI_DEPLOYMENT_MODEL")
+AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
+AZURE_OPENAI_RESOURCE = os.getenv("AZURE_OPENAI_RESOURCE")
+
 
 def track_event_if_configured(event_name: str, event_data: dict):
+    """Track events to Application Insights if configured."""
     instrumentation_key = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
     print(f"Instrumentation Key: {instrumentation_key}")
     if instrumentation_key:
         track_event(event_name, event_data)
     else:
-        logging.warning(f"Skipping track_event for {event_name} as Application Insights is not configured")
+        logging.warning("Skipping track_event for %s as Application Insights is not configured", event_name)
+
 
 class CosmosConversationClient:
+    """Client for managing conversations and messages in CosmosDB."""
 
     def __init__(
         self,
@@ -64,6 +85,7 @@ class CosmosConversationClient:
         container_name: str,
         enable_message_feedback: bool = False,
     ):
+        """Initialize CosmosDB conversation client."""
         self.cosmosdb_endpoint = cosmosdb_endpoint
         self.credential = credential
         self.database_name = database_name
@@ -94,6 +116,7 @@ class CosmosConversationClient:
             raise ValueError("Invalid CosmosDB container name")
 
     async def ensure(self):
+        """Ensure CosmosDB client is properly initialized and accessible."""
         if (
             not self.cosmosdb_client
             or not self.database_client
@@ -119,6 +142,7 @@ class CosmosConversationClient:
     async def create_conversation(
         self, user_id, conversation_id=str(uuid.uuid4()), title=""
     ):
+        """Create a new conversation in CosmosDB."""
         conversation = {
             "id": conversation_id,
             "type": "conversation",
@@ -136,6 +160,7 @@ class CosmosConversationClient:
             return False
 
     async def upsert_conversation(self, conversation):
+        """Update or insert a conversation in CosmosDB."""
         resp = await self.container_client.upsert_item(conversation)
         if resp:
             return resp
@@ -143,6 +168,7 @@ class CosmosConversationClient:
             return False
 
     async def delete_conversation(self, user_id, conversation_id):
+        """Delete a conversation from CosmosDB."""
         conversation = await self.container_client.read_item(
             item=conversation_id, partition_key=user_id
         )
@@ -155,6 +181,7 @@ class CosmosConversationClient:
             return True
 
     async def delete_messages(self, conversation_id, user_id):
+        """Delete all messages for a conversation."""
         # get a list of all the messages in the conversation
         messages = await self.get_messages(user_id, conversation_id)
         response_list = []
@@ -167,6 +194,7 @@ class CosmosConversationClient:
             return response_list
 
     async def get_conversations(self, user_id, limit, sort_order="DESC", offset=0):
+        """Get list of conversations for a user with pagination."""
         parameters = [{"name": "@userId", "value": user_id}]
         query = f"SELECT * FROM c where c.userId = @userId and c.type='conversation' order by c.updatedAt {sort_order}"
         if limit is not None:
@@ -181,6 +209,7 @@ class CosmosConversationClient:
         return conversations
 
     async def get_conversation(self, user_id, conversation_id):
+        """Get a specific conversation by ID for a user."""
         parameters = [
             {"name": "@conversationId", "value": conversation_id},
             {"name": "@userId", "value": user_id},
@@ -199,6 +228,7 @@ class CosmosConversationClient:
             return conversations[0]
 
     async def create_message(self, uuid, conversation_id, user_id, input_message: dict):
+        """Create a new message in a conversation."""
         message = {
             "id": uuid,
             "type": "message",
@@ -210,7 +240,7 @@ class CosmosConversationClient:
             "content": input_message,
         }
 
-        if self.enable_message_feedback:
+        if AZURE_COSMOSDB_ENABLE_FEEDBACK:
             message["feedback"] = ""
 
         resp = await self.container_client.upsert_item(message)
@@ -226,6 +256,7 @@ class CosmosConversationClient:
             return False
 
     async def update_message_feedback(self, user_id, message_id, feedback):
+        """Update feedback for a specific message."""
         message = await self.container_client.read_item(
             item=message_id, partition_key=user_id
         )
@@ -237,6 +268,7 @@ class CosmosConversationClient:
             return False
 
     async def get_messages(self, user_id, conversation_id):
+        """Get all messages for a conversation."""
         parameters = [
             {"name": "@conversationId", "value": conversation_id},
             {"name": "@userId", "value": user_id},
@@ -251,446 +283,436 @@ class CosmosConversationClient:
         return messages
 
 
-class HistoryService:
-    def __init__(self):
-        self.use_chat_history_enabled = os.getenv("USE_CHAT_HISTORY_ENABLED", "false").strip().lower() == "true"
-        self.azure_cosmosdb_database = os.getenv("AZURE_COSMOSDB_DATABASE")
-        self.azure_cosmosdb_account = os.getenv("AZURE_COSMOSDB_ACCOUNT")
-        self.azure_cosmosdb_conversations_container = os.getenv("AZURE_COSMOSDB_CONVERSATIONS_CONTAINER")
-        self.azure_cosmosdb_enable_feedback = os.getenv("AZURE_COSMOSDB_ENABLE_FEEDBACK", "false").lower() == "true"
-        self.chat_history_enabled = (
-            self.use_chat_history_enabled
-            and self.azure_cosmosdb_account
-            and self.azure_cosmosdb_database
-            and self.azure_cosmosdb_conversations_container
+# Helper functions that were previously in HistoryService
+def init_cosmosdb_client():
+    """Initialize and return a CosmosDB client."""
+    if not CHAT_HISTORY_ENABLED:
+        logger.debug("CosmosDB is not enabled in configuration")
+        return None
+
+    try:
+        cosmos_endpoint = f"https://{AZURE_COSMOSDB_ACCOUNT}.documents.azure.com:443/"
+
+        return CosmosConversationClient(
+            cosmosdb_endpoint=cosmos_endpoint,
+            credential=DefaultAzureCredential(),
+            database_name=AZURE_COSMOSDB_DATABASE,
+            container_name=AZURE_COSMOSDB_CONVERSATIONS_CONTAINER,
+            enable_message_feedback=AZURE_COSMOSDB_ENABLE_FEEDBACK,
         )
+    except Exception:
+        logger.exception("Failed to initialize CosmosDB client")
+        raise
 
-        self.azure_openai_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-        self.azure_openai_deployment_model = os.getenv("AZURE_OPENAI_DEPLOYMENT_MODEL")
-        self.azure_openai_api_version = os.getenv("AZURE_OPENAI_API_VERSION")
-        self.azure_openai_resource = os.getenv("AZURE_OPENAI_RESOURCE")
 
-    def init_cosmosdb_client(self):
-        if not self.chat_history_enabled:
-            logger.debug("CosmosDB is not enabled in configuration")
-            return None
+def init_openai_client():
+    """Initialize and return an Azure OpenAI client."""
+    user_agent = "GitHubSampleWebApp/AsyncAzureOpenAI/1.0.0"
 
-        try:
-            cosmos_endpoint = f"https://{self.azure_cosmosdb_account}.documents.azure.com:443/"
+    try:
+        if not AZURE_OPENAI_ENDPOINT and not AZURE_OPENAI_RESOURCE:
+            raise ValueError(
+                "AZURE_OPENAI_ENDPOINT or AZURE_OPENAI_RESOURCE is required")
 
-            return CosmosConversationClient(
-                cosmosdb_endpoint=cosmos_endpoint,
-                credential=DefaultAzureCredential(),
-                database_name=self.azure_cosmosdb_database,
-                container_name=self.azure_cosmosdb_conversations_container,
-                enable_message_feedback=self.azure_cosmosdb_enable_feedback,
-            )
-        except Exception:
-            logger.exception("Failed to initialize CosmosDB client")
-            raise
+        endpoint = AZURE_OPENAI_ENDPOINT or f"https://{AZURE_OPENAI_RESOURCE}.openai.azure.com/"
+        ad_token_provider = None
 
-    def init_openai_client(self):
-        user_agent = "GitHubSampleWebApp/AsyncAzureOpenAI/1.0.0"
+        logger.debug("Using Azure AD authentication for OpenAI")
+        ad_token_provider = get_bearer_token_provider(
+            DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
 
-        try:
-            if not self.azure_openai_endpoint and not self.azure_openai_resource:
-                raise ValueError(
-                    "AZURE_OPENAI_ENDPOINT or AZURE_OPENAI_RESOURCE is required")
+        if not AZURE_OPENAI_DEPLOYMENT_MODEL:
+            raise ValueError("AZURE_OPENAI_MODEL is required")
 
-            endpoint = self.azure_openai_endpoint or f"https://{self.azure_openai_resource}.openai.azure.com/"
-            ad_token_provider = None
-
-            logger.debug("Using Azure AD authentication for OpenAI")
-            ad_token_provider = get_bearer_token_provider(
-                DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
-
-            if not self.azure_openai_deployment_model:
-                raise ValueError("AZURE_OPENAI_MODEL is required")
-
-            return AsyncAzureOpenAI(
-                api_version=self.azure_openai_api_version,
-                azure_ad_token_provider=ad_token_provider,
-                default_headers={"x-ms-useragent": user_agent},
-                azure_endpoint=endpoint,
-            )
-        except Exception:
-            logger.exception("Failed to initialize Azure OpenAI client")
-            raise
-
-    async def generate_title(self, conversation_messages):
-        title_prompt = (
-            "Summarize the conversation so far into a 4-word or less title. "
-            "Do not use any quotation marks or punctuation. "
-            "Do not include any other commentary or description."
+        return AsyncAzureOpenAI(
+            api_version=AZURE_OPENAI_API_VERSION,
+            azure_ad_token_provider=ad_token_provider,
+            default_headers={"x-ms-useragent": user_agent},
+            azure_endpoint=endpoint,
         )
+    except Exception:
+        logger.exception("Failed to initialize Azure OpenAI client")
+        raise
 
-        messages = [{"role": msg["role"], "content": msg["content"]}
-                    for msg in conversation_messages if msg["role"] == "user"]
-        messages.append({"role": "user", "content": title_prompt})
 
-        try:
-            azure_openai_client = self.init_openai_client()
-            response = await azure_openai_client.chat.completions.create(
-                model=self.azure_openai_deployment_model,
-                messages=messages,
-                temperature=1,
-                max_tokens=64,
-            )
-            return response.choices[0].message.content
-        except Exception:
-            logger.error("Error generating title")
-            return messages[-2]["content"]
+async def generate_title(conversation_messages):
+    """Generate a title for a conversation based on its messages."""
+    title_prompt = (
+        "Summarize the conversation so far into a 4-word or less title. "
+        "Do not use any quotation marks or punctuation. "
+        "Do not include any other commentary or description."
+    )
 
-    async def add_conversation(self, user_id: str, request_json: dict):
-        try:
-            conversation_id = request_json.get("conversation_id")
-            messages = request_json.get("messages", [])
+    messages = [{"role": msg["role"], "content": msg["content"]}
+                for msg in conversation_messages if msg["role"] == "user"]
+    messages.append({"role": "user", "content": title_prompt})
 
-            history_metadata = {}
+    try:
+        azure_openai_client = init_openai_client()
+        response = await azure_openai_client.chat.completions.create(
+            model=AZURE_OPENAI_DEPLOYMENT_MODEL,
+            messages=messages,
+            temperature=1,
+            max_tokens=64,
+        )
+        return response.choices[0].message.content
+    except Exception:
+        logger.error("Error generating title")
+        return messages[-2]["content"]
 
-            # make sure cosmos is configured
-            cosmos_conversation_client = self.init_cosmosdb_client()
-            if not cosmos_conversation_client:
-                raise ValueError("CosmosDB is not configured or unavailable")
 
-            if not conversation_id:
-                title = await self.generate_title(messages)
-                conversation_dict = await cosmos_conversation_client.create_conversation(user_id, title)
-                conversation_id = conversation_dict["id"]
-                history_metadata["title"] = title
-                history_metadata["date"] = conversation_dict["createdAt"]
-
-            if messages and messages[-1]["role"] == "user":
-                created_message = await cosmos_conversation_client.create_message(str(uuid.uuid4()), conversation_id, user_id, messages[-1])
-                if created_message == "Conversation not found":
-                    raise ValueError(
-                        f"Conversation not found for ID: {conversation_id}")
-            else:
-                raise ValueError("No user message found")
-
-            request_body = {
-                "messages": messages, "history_metadata": {
-                    "conversation_id": conversation_id}}
-            # return await complete_chat_request(request_body)
-            return True
-        except Exception:
-            logger.exception("Error in add_conversation")
-            raise
-
-    async def update_conversation(self, user_id: str, request_json: dict):
+async def add_conversation(user_id: str, request_json: dict):
+    """Add a new conversation with initial message."""
+    try:
         conversation_id = request_json.get("conversation_id")
         messages = request_json.get("messages", [])
-        if not conversation_id:
-            raise ValueError("No conversation_id found")
-        cosmos_conversation_client = self.init_cosmosdb_client()
-        # Retrieve or create conversation
-        conversation = await cosmos_conversation_client.get_conversation(user_id, conversation_id)
-        if not conversation:
-            title = await self.generate_title(messages)
-            conversation = await cosmos_conversation_client.create_conversation(
-                user_id=user_id, conversation_id=conversation_id, title=title
-            )
-            conversation_id = conversation["id"]
 
-        # Format the incoming message object in the "chat/completions" messages format then write it to the
-        # conversation history in cosmos
-        messages = request_json["messages"]
-        if len(messages) > 0 and messages[0]["role"] == "user":
-            user_message = next(
-                (
-                    message
-                    for message in reversed(messages)
-                    if message["role"] == "user"
-                ),
-                None,
-            )
-            createdMessageValue = await cosmos_conversation_client.create_message(
+        history_metadata = {}
+
+        # make sure cosmos is configured
+        cosmos_conversation_client = init_cosmosdb_client()
+        if not cosmos_conversation_client:
+            raise ValueError("CosmosDB is not configured or unavailable")
+
+        if not conversation_id:
+            title = await generate_title(messages)
+            conversation_dict = await cosmos_conversation_client.create_conversation(user_id, title)
+            conversation_id = conversation_dict["id"]
+            history_metadata["title"] = title
+            history_metadata["date"] = conversation_dict["createdAt"]
+
+        if messages and messages[-1]["role"] == "user":
+            created_message = await cosmos_conversation_client.create_message(str(uuid.uuid4()), conversation_id, user_id, messages[-1])
+            if created_message == "Conversation not found":
+                raise ValueError(
+                    f"Conversation not found for ID: {conversation_id}")
+        else:
+            raise ValueError("No user message found")
+
+        # request_body = {
+        #     "messages": messages, "history_metadata": {
+        #         "conversation_id": conversation_id}}
+        # return await complete_chat_request(request_body)
+        return True
+    except Exception:
+        logger.exception("Error in add_conversation")
+        raise
+
+
+async def update_conversation(user_id: str, request_json: dict):
+    """Update a conversation with new messages."""
+    conversation_id = request_json.get("conversation_id")
+    messages = request_json.get("messages", [])
+    if not conversation_id:
+        raise ValueError("No conversation_id found")
+    cosmos_conversation_client = init_cosmosdb_client()
+    # Retrieve or create conversation
+    conversation = await cosmos_conversation_client.get_conversation(user_id, conversation_id)
+    if not conversation:
+        title = await generate_title(messages)
+        conversation = await cosmos_conversation_client.create_conversation(
+            user_id=user_id, conversation_id=conversation_id, title=title
+        )
+        conversation_id = conversation["id"]
+
+    # Format the incoming message object in the "chat/completions" messages format then write it to the
+    # conversation history in cosmos
+    messages = request_json["messages"]
+    if len(messages) > 0 and messages[0]["role"] == "user":
+        user_message = next(
+            (
+                message
+                for message in reversed(messages)
+                if message["role"] == "user"
+            ),
+            None,
+        )
+        createdMessageValue = await cosmos_conversation_client.create_message(
+            uuid=str(uuid.uuid4()),
+            conversation_id=conversation_id,
+            user_id=user_id,
+            input_message=user_message,
+        )
+        if createdMessageValue == "Conversation not found":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Conversation not found")
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User message not found")
+
+    # Format the incoming message object in the "chat/completions" messages format
+    # then write it to the conversation history in cosmos
+    messages = request_json["messages"]
+    if len(messages) > 0 and messages[-1]["role"] == "assistant":
+        if len(messages) > 1 and messages[-2].get("role", None) == "tool":
+            # write the tool message first
+            await cosmos_conversation_client.create_message(
                 uuid=str(uuid.uuid4()),
                 conversation_id=conversation_id,
                 user_id=user_id,
-                input_message=user_message,
+                input_message=messages[-2],
             )
-            if createdMessageValue == "Conversation not found":
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Conversation not found")
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User message not found")
-
-        # Format the incoming message object in the "chat/completions" messages format
-        # then write it to the conversation history in cosmos
-        messages = request_json["messages"]
-        if len(messages) > 0 and messages[-1]["role"] == "assistant":
-            if len(messages) > 1 and messages[-2].get("role", None) == "tool":
-                # write the tool message first
-                await cosmos_conversation_client.create_message(
-                    uuid=str(uuid.uuid4()),
-                    conversation_id=conversation_id,
-                    user_id=user_id,
-                    input_message=messages[-2],
-                )
-            # write the assistant message
-            await cosmos_conversation_client.create_message(
-                uuid=messages[-1]["id"],
-                conversation_id=conversation_id,
-                user_id=user_id,
-                input_message=messages[-1],
-            )
-        else:
-            await cosmos_conversation_client.cosmosdb_client.close()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No assistant message found")
+        # write the assistant message
+        await cosmos_conversation_client.create_message(
+            uuid=messages[-1]["id"],
+            conversation_id=conversation_id,
+            user_id=user_id,
+            input_message=messages[-1],
+        )
+    else:
         await cosmos_conversation_client.cosmosdb_client.close()
-        return {
-            "id": conversation["id"],
-            "title": conversation["title"],
-            "updatedAt": conversation.get("updatedAt")}
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No assistant message found")
+    await cosmos_conversation_client.cosmosdb_client.close()
+    return {
+        "id": conversation["id"],
+        "title": conversation["title"],
+        "updatedAt": conversation.get("updatedAt")}
 
-    async def rename_conversation(self, user_id: str, conversation_id, title):
-        if not conversation_id:
-            raise ValueError("No conversation_id found")
 
-        cosmos_conversation_client = self.init_cosmosdb_client()
+async def rename_conversation(user_id: str, conversation_id, title):
+    """Rename a conversation."""
+    if not conversation_id:
+        raise ValueError("No conversation_id found")
+
+    cosmos_conversation_client = init_cosmosdb_client()
+    conversation = await cosmos_conversation_client.get_conversation(user_id, conversation_id)
+
+    if not conversation:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Conversation {conversation_id} was not found. It either does not exist or the logged-in user does not have access to it.")
+
+    conversation["title"] = title
+    updated_conversation = await cosmos_conversation_client.upsert_conversation(
+        conversation
+    )
+
+    return updated_conversation
+
+
+async def update_message_feedback(
+        user_id: str,
+        message_id: str,
+        message_feedback: str) -> Optional[dict]:
+    """Update feedback for a specific message."""
+    try:
+        logger.info(
+            f"Updating feedback for message_id: {message_id} by user: {user_id}")
+        cosmos_conversation_client = init_cosmosdb_client()
+        updated_message = await cosmos_conversation_client.update_message_feedback(user_id, message_id, message_feedback)
+
+        if updated_message:
+            logger.info(
+                f"Successfully updated message_id: {message_id} with feedback: {message_feedback}")
+            return updated_message
+        else:
+            logger.warning(f"Message ID {message_id} not found or access denied")
+            return None
+    except Exception:
+        logger.exception(
+            f"Error updating message feedback for message_id: {message_id}")
+        raise
+
+
+async def delete_conversation(user_id: str, conversation_id: str) -> bool:
+    """
+    Deletes a conversation and its messages from the database if the user has access.
+
+    Args:
+        user_id (str): The ID of the authenticated user.
+        conversation_id (str): The ID of the conversation to delete.
+
+    Returns:
+        bool: True if the conversation was deleted successfully, False otherwise.
+    """
+    try:
+        cosmos_conversation_client = init_cosmosdb_client()
+
+        # Fetch conversation to ensure it exists and belongs to the user
         conversation = await cosmos_conversation_client.get_conversation(user_id, conversation_id)
 
         if not conversation:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Conversation {conversation_id} was not found. It either does not exist or the logged-in user does not have access to it.")
-
-        conversation["title"] = title
-        updated_conversation = await cosmos_conversation_client.upsert_conversation(
-            conversation
-        )
-
-        return updated_conversation
-
-    async def update_message_feedback(
-            self,
-            user_id: str,
-            message_id: str,
-            message_feedback: str) -> Optional[dict]:
-        try:
-            logger.info(
-                f"Updating feedback for message_id: {message_id} by user: {user_id}")
-            cosmos_conversation_client = self.init_cosmosdb_client()
-            updated_message = await cosmos_conversation_client.update_message_feedback(user_id, message_id, message_feedback)
-
-            if updated_message:
-                logger.info(
-                    f"Successfully updated message_id: {message_id} with feedback: {message_feedback}")
-                return updated_message
-            else:
-                logger.warning(f"Message ID {message_id} not found or access denied")
-                return None
-        except Exception:
-            logger.exception(
-                f"Error updating message feedback for message_id: {message_id}")
-            raise
-
-    async def delete_conversation(self, user_id: str, conversation_id: str) -> bool:
-        """
-        Deletes a conversation and its messages from the database if the user has access.
-
-        Args:
-            user_id (str): The ID of the authenticated user.
-            conversation_id (str): The ID of the conversation to delete.
-
-        Returns:
-            bool: True if the conversation was deleted successfully, False otherwise.
-        """
-        try:
-            cosmos_conversation_client = self.init_cosmosdb_client()
-
-            # Fetch conversation to ensure it exists and belongs to the user
-            conversation = await cosmos_conversation_client.get_conversation(user_id, conversation_id)
-
-            if not conversation:
-                logger.warning(f"Conversation {conversation_id} not found.")
-                return False
-
-            if conversation["userId"] != user_id:
-                logger.warning(
-                    f"User {user_id} does not have permission to delete {conversation_id}.")
-                return False
-
-            # Delete associated messages first (if applicable)
-            await cosmos_conversation_client.delete_messages(conversation_id, user_id)
-
-            # Delete the conversation itself
-            await cosmos_conversation_client.delete_conversation(user_id, conversation_id)
-
-            logger.info(f"Successfully deleted conversation {conversation_id}.")
-            return True
-
-        except Exception as e:
-            logger.exception(f"Error deleting conversation {conversation_id}: {e}")
+            logger.warning(f"Conversation {conversation_id} not found.")
             return False
 
-    async def get_conversations(self, user_id: str, offset: int, limit: Optional[int]):
-        """
-        Retrieves a list of conversations for a given user.
+        if conversation["userId"] != user_id:
+            logger.warning(
+                f"User {user_id} does not have permission to delete {conversation_id}.")
+            return False
 
-        Args:
-            user_id (str): The ID of the authenticated user.
+        # Delete associated messages first (if applicable)
+        await cosmos_conversation_client.delete_messages(conversation_id, user_id)
 
-        Returns:
-            list: A list of conversation objects or an empty list if none exist.
-        """
-        try:
-            cosmos_conversation_client = self.init_cosmosdb_client()
-            if not cosmos_conversation_client:
-                raise ValueError("CosmosDB is not configured or unavailable")
+        # Delete the conversation itself
+        await cosmos_conversation_client.delete_conversation(user_id, conversation_id)
 
-            conversations = await cosmos_conversation_client.get_conversations(user_id, offset=offset, limit=limit)
+        logger.info(f"Successfully deleted conversation {conversation_id}.")
+        return True
 
-            return conversations or []
-        except Exception:
-            logger.exception(f"Error retrieving conversations for user {user_id}")
+    except Exception as e:
+        logger.exception(f"Error deleting conversation {conversation_id}: {e}")
+        return False
+
+
+async def get_conversations(user_id: str, offset: int, limit: Optional[int]):
+    """
+    Retrieves a list of conversations for a given user.
+
+    Args:
+        user_id (str): The ID of the authenticated user.
+
+    Returns:
+        list: A list of conversation objects or an empty list if none exist.
+    """
+    try:
+        cosmos_conversation_client = init_cosmosdb_client()
+        if not cosmos_conversation_client:
+            raise ValueError("CosmosDB is not configured or unavailable")
+
+        conversations = await cosmos_conversation_client.get_conversations(user_id, offset=offset, limit=limit)
+
+        return conversations or []
+    except Exception:
+        logger.exception(f"Error retrieving conversations for user {user_id}")
+        return []
+
+
+async def get_messages(user_id: str, conversation_id: str):
+    """
+    Retrieves all messages for a given conversation ID if the user has access.
+
+    Args:
+        user_id (str): The ID of the authenticated user.
+        conversation_id (str): The ID of the conversation.
+
+    Returns:
+        list: A list of messages in the conversation.
+    """
+    try:
+        cosmos_conversation_client = init_cosmosdb_client()
+        if not cosmos_conversation_client:
+            raise ValueError("CosmosDB is not configured or unavailable")
+
+        # Fetch conversation to ensure it exists and belongs to the user
+        conversation = await cosmos_conversation_client.get_conversation(user_id, conversation_id)
+        if not conversation:
+            logger.warning(f"Conversation {conversation_id} not found.")
             return []
 
-    async def get_messages(self, user_id: str, conversation_id: str):
-        """
-        Retrieves all messages for a given conversation ID if the user has access.
+        # Fetch messages associated with the conversation
+        messages = await cosmos_conversation_client.get_messages(user_id, conversation_id)
+        return messages
 
-        Args:
-            user_id (str): The ID of the authenticated user.
-            conversation_id (str): The ID of the conversation.
+    except Exception as e:
+        logger.exception(
+            f"Error retrieving messages for conversation {conversation_id}: {e}")
+        return []
 
-        Returns:
-            list: A list of messages in the conversation.
-        """
-        try:
-            cosmos_conversation_client = self.init_cosmosdb_client()
-            if not cosmos_conversation_client:
-                raise ValueError("CosmosDB is not configured or unavailable")
 
-            # Fetch conversation to ensure it exists and belongs to the user
-            conversation = await cosmos_conversation_client.get_conversation(user_id, conversation_id)
-            if not conversation:
-                logger.warning(f"Conversation {conversation_id} not found.")
-                return []
+async def get_conversation_messages(user_id: str, conversation_id: str):
+    """
+    Retrieves a single conversation and its messages for a given user.
 
-            # Fetch messages associated with the conversation
-            messages = await cosmos_conversation_client.get_messages(user_id, conversation_id)
-            return messages
+    Args:
+        user_id (str): The ID of the authenticated user.
+        conversation_id (str): The ID of the conversation to retrieve.
 
-        except Exception as e:
-            logger.exception(
-                f"Error retrieving messages for conversation {conversation_id}: {e}")
-            return []
+    Returns:
+        dict: The conversation object with messages or None if not found.
+    """
+    try:
+        cosmos_conversation_client = init_cosmosdb_client()
+        if not cosmos_conversation_client:
+            raise ValueError("CosmosDB is not configured or unavailable")
 
-    async def get_conversation_messages(self, user_id: str, conversation_id: str):
-        """
-        Retrieves a single conversation and its messages for a given user.
-
-        Args:
-            user_id (str): The ID of the authenticated user.
-            conversation_id (str): The ID of the conversation to retrieve.
-
-        Returns:
-            dict: The conversation object with messages or None if not found.
-        """
-        try:
-            cosmos_conversation_client = self.init_cosmosdb_client()
-            if not cosmos_conversation_client:
-                raise ValueError("CosmosDB is not configured or unavailable")
-
-            # Fetch the conversation details
-            conversation = await cosmos_conversation_client.get_conversation(user_id, conversation_id)
-            if not conversation:
-                logger.warning(
-                    f"Conversation {conversation_id} not found for user {user_id}.")
-                return None
-
-            # Get messages related to the conversation
-            conversation_messages = await cosmos_conversation_client.get_messages(user_id, conversation_id)
-
-            # Format messages for the frontend
-            messages = [
-                {
-                    "id": msg["id"],
-                    "role": msg["role"],
-                    "content": msg["content"],
-                    "createdAt": msg["createdAt"],
-                    "feedback": msg.get("feedback"),
-                }
-                for msg in conversation_messages
-            ]
-
-            return messages
-        except Exception:
-            logger.exception(
-                f"Error retrieving conversation {conversation_id} for user {user_id}")
+        # Fetch the conversation details
+        conversation = await cosmos_conversation_client.get_conversation(user_id, conversation_id)
+        if not conversation:
+            logger.warning(
+                f"Conversation {conversation_id} not found for user {user_id}.")
             return None
 
-    async def clear_messages(self, user_id: str, conversation_id: str) -> bool:
-        """
-        Clears all messages in a conversation while keeping the conversation itself.
+        # Get messages related to the conversation
+        conversation_messages = await cosmos_conversation_client.get_messages(user_id, conversation_id)
 
-        Args:
-            user_id (str): The ID of the authenticated user.
-            conversation_id (str): The ID of the conversation.
+        # Format messages for the frontend
+        messages = [
+            {
+                "id": msg["id"],
+                "role": msg["role"],
+                "content": msg["content"],
+                "createdAt": msg["createdAt"],
+                "feedback": msg.get("feedback"),
+            }
+            for msg in conversation_messages
+        ]
 
-        Returns:
-            bool: True if messages were cleared successfully, False otherwise.
-        """
-        try:
-            cosmos_conversation_client = self.init_cosmosdb_client()
-            if not cosmos_conversation_client:
-                raise ValueError("CosmosDB is not configured or unavailable")
+        return messages
+    except Exception:
+        logger.exception(
+            f"Error retrieving conversation {conversation_id} for user {user_id}")
+        return None
 
-            # Ensure the conversation exists and belongs to the user
-            conversation = await cosmos_conversation_client.get_conversation(user_id, conversation_id)
-            if not conversation:
-                logger.warning(f"Conversation {conversation_id} not found.")
-                return False
 
-            if conversation["user_id"] != user_id:
-                logger.warning(
-                    f"User {user_id} does not have permission to clear messages in {conversation_id}.")
-                return False
+async def clear_messages(user_id: str, conversation_id: str) -> bool:
+    """
+    Clears all messages in a conversation while keeping the conversation itself.
 
-            # Delete all messages associated with the conversation
-            await cosmos_conversation_client.delete_messages(conversation_id, user_id)
+    Args:
+        user_id (str): The ID of the authenticated user.
+        conversation_id (str): The ID of the conversation.
 
-            logger.info(
-                f"Successfully cleared messages in conversation {conversation_id}.")
-            return True
+    Returns:
+        bool: True if messages were cleared successfully, False otherwise.
+    """
+    try:
+        cosmos_conversation_client = init_cosmosdb_client()
+        if not cosmos_conversation_client:
+            raise ValueError("CosmosDB is not configured or unavailable")
 
-        except Exception as e:
-            logger.exception(
-                f"Error clearing messages for conversation {conversation_id}: {e}")
+        # Ensure the conversation exists and belongs to the user
+        conversation = await cosmos_conversation_client.get_conversation(user_id, conversation_id)
+        if not conversation:
+            logger.warning(f"Conversation {conversation_id} not found.")
             return False
 
-    async def ensure_cosmos(self):
-        """
-        Retrieves a list of conversations for a given user.
+        if conversation["user_id"] != user_id:
+            logger.warning(
+                f"User {user_id} does not have permission to clear messages in {conversation_id}.")
+            return False
 
-        Args:
-            user_id (str): The ID of the authenticated user.
+        # Delete all messages associated with the conversation
+        await cosmos_conversation_client.delete_messages(conversation_id, user_id)
 
-        Returns:
-            list: A list of conversation objects or an empty list if none exist.
-        """
-        try:
-            cosmos_conversation_client = self.init_cosmosdb_client()
-            success, err = await cosmos_conversation_client.ensure()
-            return success, err
-        except Exception as e:
-            logger.exception(f"Error ensuring CosmosDB configuration: {e}")
-            return False, str(e)
+        logger.info(
+            f"Successfully cleared messages in conversation {conversation_id}.")
+        return True
 
-
-# Single instance of HistoryService (if applicable)
-history_service = HistoryService()
+    except Exception as e:
+        logger.exception(
+            f"Error clearing messages for conversation {conversation_id}: {e}")
+        return False
 
 
+async def ensure_cosmos():
+    """Ensure CosmosDB is properly configured and accessible."""
+    try:
+        cosmos_conversation_client = init_cosmosdb_client()
+        success, err = await cosmos_conversation_client.ensure()
+        return success, err
+    except Exception as e:
+        logger.exception(f"Error ensuring CosmosDB configuration: {e}")
+        return False, str(e)
+
+
+# Route handlers
 @router.post("/generate")
-async def add_conversation(request: Request):
+async def add_conversation_route(request: Request):
+    """Route handler for adding a new conversation."""
     try:
         authenticated_user = get_authenticated_user_details(
             request_headers=request.headers)
@@ -699,7 +721,7 @@ async def add_conversation(request: Request):
         # Parse request body
         request_json = await request.json()
 
-        response = await history_service.add_conversation(user_id, request_json)
+        response = await add_conversation(user_id, request_json)
         track_event_if_configured("ConversationCreated", {
             "user_id": user_id,
             "request": request_json,
@@ -716,7 +738,8 @@ async def add_conversation(request: Request):
 
 
 @router.post("/update")
-async def update_conversation(request: Request):
+async def update_conversation_route(request: Request):
+    """Route handler for updating a conversation."""
     try:
         authenticated_user = get_authenticated_user_details(
             request_headers=request.headers)
@@ -729,8 +752,8 @@ async def update_conversation(request: Request):
         if not conversation_id:
             raise HTTPException(status_code=400, detail="No conversation_id found")
 
-        # Call HistoryService to update conversation
-        update_response = await history_service.update_conversation(user_id, request_json)
+        # Call update_conversation function
+        update_response = await update_conversation(user_id, request_json)
 
         if not update_response:
             raise HTTPException(status_code=500, detail="Failed to update conversation")
@@ -761,7 +784,8 @@ async def update_conversation(request: Request):
 
 
 @router.post("/message_feedback")
-async def update_message_feedback(request: Request):
+async def update_message_feedback_route(request: Request):
+    """Route handler for updating message feedback."""
     try:
         authenticated_user = get_authenticated_user_details(
             request_headers=request.headers)
@@ -786,8 +810,8 @@ async def update_message_feedback(request: Request):
             })
             raise HTTPException(status_code=400, detail="message_feedback is required")
 
-        # Call HistoryService to update message feedback
-        updated_message = await history_service.update_message_feedback(user_id, message_id, message_feedback)
+        # Call update_message_feedback function
+        updated_message = await update_message_feedback(user_id, message_id, message_feedback)
 
         if updated_message:
             track_event_if_configured("MessageFeedbackUpdated", {
@@ -822,7 +846,8 @@ async def update_message_feedback(request: Request):
 
 
 @router.delete("/delete")
-async def delete_conversation(request: Request):
+async def delete_conversation_route(request: Request):
+    """Route handler for deleting a conversation."""
     try:
         # Get the user ID from request headers
         authenticated_user = get_authenticated_user_details(
@@ -838,8 +863,8 @@ async def delete_conversation(request: Request):
             })
             raise HTTPException(status_code=400, detail="conversation_id is required")
 
-        # Delete conversation using HistoryService
-        deleted = await history_service.delete_conversation(user_id, conversation_id)
+        # Delete conversation using delete_conversation function
+        deleted = await delete_conversation(user_id, conversation_id)
         if deleted:
             track_event_if_configured("ConversationDeleted", {
                 "user_id": user_id,
@@ -874,9 +899,9 @@ async def list_conversations(
     offset: int = Query(0, alias="offset"),
     limit: int = Query(25, alias="limit")
 ):
+    """Route handler for listing conversations."""
     try:
-        chat_service_instance = ChatService(request=request)
-        chat_service_instance.adjust_processed_data_dates()
+        await adjust_processed_data_dates()
         authenticated_user = get_authenticated_user_details(
             request_headers=request.headers)
         user_id = authenticated_user["user_principal_id"]
@@ -884,7 +909,7 @@ async def list_conversations(
         logger.info(f"user_id: {user_id}, offset: {offset}, limit: {limit}")
 
         # Get conversations
-        conversations = await history_service.get_conversations(user_id, offset=offset, limit=limit)
+        conversations = await get_conversations(user_id, offset=offset, limit=limit)
 
         if not isinstance(conversations, list):
             track_event_if_configured("ListConversationsNotFound", {
@@ -914,7 +939,8 @@ async def list_conversations(
 
 
 @router.post("/read")
-async def get_conversation_messages(request: Request):
+async def get_conversation_messages_route(request: Request):
+    """Route handler for reading conversation messages."""
     try:
         authenticated_user = get_authenticated_user_details(
             request_headers=request.headers)
@@ -932,7 +958,7 @@ async def get_conversation_messages(request: Request):
             raise HTTPException(status_code=400, detail="conversation_id is required")
 
         # Get conversation details
-        conversationMessages = await history_service.get_conversation_messages(user_id, conversation_id)
+        conversationMessages = await get_conversation_messages(user_id, conversation_id)
         if not conversationMessages:
             track_event_if_configured("ReadConversationNotFound", {
                 "user_id": user_id,
@@ -964,7 +990,8 @@ async def get_conversation_messages(request: Request):
 
 
 @router.post("/rename")
-async def rename_conversation(request: Request):
+async def rename_conversation_route(request: Request):
+    """Route handler for renaming a conversation."""
     try:
         authenticated_user = get_authenticated_user_details(
             request_headers=request.headers)
@@ -988,7 +1015,7 @@ async def rename_conversation(request: Request):
             })
             raise HTTPException(status_code=400, detail="title is required")
 
-        rename_conversation = await history_service.rename_conversation(user_id, conversation_id, title)
+        rename_result = await rename_conversation(user_id, conversation_id, title)
 
         track_event_if_configured("ConversationRenamed", {
             "user_id": user_id,
@@ -996,7 +1023,7 @@ async def rename_conversation(request: Request):
             "new_title": title
         })
 
-        return JSONResponse(content=rename_conversation, status_code=200)
+        return JSONResponse(content=rename_result, status_code=200)
 
     except Exception as e:
         logger.exception("Exception in /history/rename: %s", str(e))
@@ -1009,6 +1036,7 @@ async def rename_conversation(request: Request):
 
 @router.delete("/delete_all")
 async def delete_all_conversations(request: Request):
+    """Route handler for deleting all conversations for a user."""
     try:
         # Get the user ID from request headers
         authenticated_user = get_authenticated_user_details(
@@ -1016,7 +1044,7 @@ async def delete_all_conversations(request: Request):
         user_id = authenticated_user["user_principal_id"]
 
         # Get all user conversations
-        conversations = await history_service.get_conversations(user_id, offset=0, limit=None)
+        conversations = await get_conversations(user_id, offset=0, limit=None)
         if not conversations:
             track_event_if_configured("DeleteAllConversationsNotFound", {
                 "user_id": user_id
@@ -1026,7 +1054,7 @@ async def delete_all_conversations(request: Request):
 
         # Delete all conversations
         for conversation in conversations:
-            await history_service.delete_conversation(user_id, conversation["id"])
+            await delete_conversation(user_id, conversation["id"])
 
         track_event_if_configured("AllConversationsDeleted", {
             "user_id": user_id,
@@ -1049,7 +1077,8 @@ async def delete_all_conversations(request: Request):
 
 
 @router.post("/clear")
-async def clear_messages(request: Request):
+async def clear_messages_route(request: Request):
+    """Route handler for clearing messages in a conversation."""
     try:
         # Get the user ID from request headers
         authenticated_user = get_authenticated_user_details(
@@ -1068,7 +1097,7 @@ async def clear_messages(request: Request):
             raise HTTPException(status_code=400, detail="conversation_id is required")
 
         # Delete conversation messages from CosmosDB
-        success = await history_service.clear_messages(user_id, conversation_id)
+        success = await clear_messages(user_id, conversation_id)
 
         if not success:
             track_event_if_configured("ClearMessagesFailed", {
@@ -1098,9 +1127,10 @@ async def clear_messages(request: Request):
 
 
 @router.get("/history/ensure")
-async def ensure_cosmos():
+async def ensure_cosmos_route():
+    """Route handler for ensuring CosmosDB configuration."""
     try:
-        success, err = await history_service.ensure_cosmos()
+        success, err = await ensure_cosmos()
         if not success:
             track_event_if_configured("CosmosDBEnsureFailed", {
                 "error": err or "Unknown error occurred"
