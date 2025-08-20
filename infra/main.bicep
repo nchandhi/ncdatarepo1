@@ -220,6 +220,19 @@ module createIndex 'deploy_index_scripts.bicep' = {
   dependsOn:[sqlDBModule,uploadFiles]
 }
 
+//========== Deployment script to create Agent ========== //
+module createAgent 'run_agent_scripts.bicep' = {
+  name : 'run_agent_scripts'
+  params:{
+    solutionLocation: solutionLocation
+    managedIdentityResourceId:managedIdentityModule.outputs.managedIdentityOutput.id
+    managedIdentityClientId:managedIdentityModule.outputs.managedIdentityOutput.clientId
+    baseUrl:baseUrl
+    keyVaultName:aifoundry.outputs.keyvaultName
+    projectEndpoint: aifoundry.outputs.projectEndpoint
+  }
+}
+
 module hostingplan 'deploy_app_service_plan.bicep' = {
   name: 'deploy_app_service_plan'
   params: {
