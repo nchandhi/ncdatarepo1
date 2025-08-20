@@ -16,6 +16,7 @@ from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
 from semantic_kernel.agents import AzureAIAgent, AzureAIAgentThread, AzureAIAgentSettings
 from azure.identity.aio import DefaultAzureCredential as AsyncDefaultAzureCredential
+# from azure.ai.agents.models import FabricTool
 
 load_dotenv()
 
@@ -25,6 +26,7 @@ class AgentType(Enum):
     CONVERSATION = "conversation"
     SQL = "sql"
     CHART = "chart"
+    # FABRIC = "fabric"
 
 
 class AgentFactory:
@@ -68,6 +70,8 @@ class AgentFactory:
             return await cls._create_sql_agent()
         elif agent_type == AgentType.CHART:
             return await cls._create_chart_agent()
+        # elif agent_type == AgentType.FABRIC:
+        #     return await cls._create_fabric_agent()
         else:
             raise ValueError(f"Unknown agent type: {agent_type}")
 
@@ -76,6 +80,7 @@ class AgentFactory:
         """Delete the specified agent instance based on its type."""
         if agent_type == AgentType.CONVERSATION:
             await cls._delete_conversation_agent(agent)
+        # elif agent_type in [AgentType.SQL, AgentType.CHART, AgentType.FABRIC]:
         elif agent_type in [AgentType.SQL, AgentType.CHART]:
             await cls._delete_project_agent(agent)
 
@@ -159,6 +164,57 @@ class AgentFactory:
             "agent": agent,
             "client": project_client
         }
+
+    # @classmethod
+    # async def _create_fabric_agent(cls) -> Dict[str, Any]:
+    #     """Create a Fabric agent that interacts with Azure Fabric services."""
+    #     ai_project_endpoint = os.getenv("AZURE_AI_AGENT_ENDPOINT")
+    #     azure_openai_deployment_model = os.getenv("AZURE_OPENAI_DEPLOYMENT_MODEL")
+    #     solution_name = os.getenv("SOLUTION_NAME", "")
+    #     fabric_connection_name = os.getenv("FABRIC_CONNECTION_NAME", "")
+
+    #     instructions = '''- Purpose: Analyze customer information.
+    #                 - Use this to highlight customer details.
+    #                 - ✅ Example queries the Fabric tool can answer:
+    #                     - What is the total number of customers?
+    #                     - how many sales orders?
+    #                     - How many products?'''
+
+    #     project_client = AIProjectClient(
+    #         endpoint=ai_project_endpoint,
+    #         credential=DefaultAzureCredential(),
+    #     )
+        
+    #     # Find fabric connection by looking for fabric_dataagent type
+    #     fabric_connection_id = None
+    #     for connection in project_client.connections.list():
+    #         print(f"FABRIC-AGENT-FACTORY: Connection: {connection.name}, metadata: {connection.metadata}")
+    #         if connection.metadata and connection.metadata.get('type') == 'fabric_dataagent' and connection.name == fabric_connection_name:
+    #             fabric_connection_id = connection.id
+    #             break
+        
+    #     if not fabric_connection_id:
+    #         raise ValueError("No Fabric connection found with type 'fabric_dataagent'")
+        
+    #      # Initialize the Fabric tool with the connection ID
+    #     fabric = FabricTool(connection_id=fabric_connection_id)
+    #     print("FABRIC-CustomerSalesKernel-fabrictool created", flush=True)
+
+    #      # Create agent WITHOUT the 'with' statement to keep the client open
+    #     agents_client = project_client.agents
+    #     agent = agents_client.create_agent(
+    #         model=azure_openai_deployment_model,
+    #         name=f"DA-ChatWithFabricAgent-{solution_name}",
+    #         instructions=instructions,
+    #         tools=fabric.definitions,
+    #     )
+        
+    #     print(f"FABRIC-CustomerSalesKernel-Created Agent, ID: %s" % agent.id, flush=True)
+
+    #     return {
+    #         "agent": agent,
+    #         "client": project_client
+    #     }
 
     @classmethod
     async def _create_chart_agent(cls) -> Dict[str, Any]:

@@ -33,11 +33,13 @@ async def lifespan(fastapi_app: FastAPI):
     fastapi_app.state.agent = await AgentFactory.get_agent(AgentType.CONVERSATION)
     fastapi_app.state.sql_agent = await AgentFactory.get_agent(AgentType.SQL)
     fastapi_app.state.chart_agent = await AgentFactory.get_agent(AgentType.CHART)
+    # fastapi_app.state.fabric_agent = await AgentFactory.get_agent(AgentType.FABRIC)
     yield
     await AgentFactory.delete_all_agents()
     fastapi_app.state.sql_agent = None
     fastapi_app.state.agent = None
     fastapi_app.state.chart_agent = None
+    # fastapi_app.state.fabric_agent = None
 
 
 def build_app() -> FastAPI:
