@@ -31,13 +31,11 @@ async def lifespan(fastapi_app: FastAPI):
     On shutdown, deletes the agent instance and performs any necessary cleanup.
     """
     fastapi_app.state.agent = await AgentFactory.get_agent(AgentType.CONVERSATION)
-    fastapi_app.state.search_agent = await AgentFactory.get_agent(AgentType.SEARCH)
     fastapi_app.state.sql_agent = await AgentFactory.get_agent(AgentType.SQL)
     fastapi_app.state.chart_agent = await AgentFactory.get_agent(AgentType.CHART)
     yield
     await AgentFactory.delete_all_agents()
     fastapi_app.state.sql_agent = None
-    fastapi_app.state.search_agent = None
     fastapi_app.state.agent = None
     fastapi_app.state.chart_agent = None
 

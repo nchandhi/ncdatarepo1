@@ -573,8 +573,8 @@ async def generate_title(conversation_messages):
             max_tokens=64,
         )
         return response.choices[0].message.content
-    except Exception:
-        logger.error("Error generating title")
+    except Exception as e:
+        logger.error("Error generating title: %s", e)
         return messages[-2]["content"]
 
 

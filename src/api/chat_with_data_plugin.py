@@ -2,15 +2,13 @@
 Plugin for chat interactions with data using AI agents.
 """
 
-import ast
 import logging
 import os
-import re
 import struct
-from typing import Annotated, Any, Dict
+from typing import Annotated
 
 import pyodbc
-from azure.ai.agents.models import MessageRole, ListSortOrder, RunStepToolCallDetails
+from azure.ai.agents.models import MessageRole, ListSortOrder
 from azure.identity.aio import DefaultAzureCredential
 from dotenv import load_dotenv
 from semantic_kernel.functions.kernel_function_decorator import kernel_function
@@ -128,26 +126,15 @@ class ChatWithDataPlugin:
 
         return answer
 
-    @kernel_function(name="ChatWithCallTranscripts", description="Provides summaries or detailed explanations from the search index.")
-    async def get_answers_from_calltranscripts(
+    @kernel_function(name="GenerateChartData", description="Generates Chart.js v4.4.4 compatible JSON data for data visualization requests using current and immediate previous context.")
+    async def get_chart_data(
             self,
-            question: Annotated[str, "the question"]
+            input: Annotated[str, "The user's data visualization request along with relevant conversation history and context needed to generate appropriate chart data"],
     ):
-        """
-        Uses Azure AI Search agent to answer a question based on indexed call transcripts.
-
-        Args:
-            question (str): The user's query.
-
-        Returns:
-            dict: A dictionary with the answer and citation metadata.
-        """
-
-        answer: Dict[str, Any] = {"answer": "", "citations": []}
-        agent = None
-
+        query = input
+        query = query.strip()
         try:
-            agent_info = await AgentFactory.get_agent(AgentType.SEARCH)
+            agent_info = await AgentFactory.get_agent(AgentType.CHART)
             agent = agent_info["agent"]
             project_client = agent_info["client"]
 
@@ -156,48 +143,27 @@ class ChatWithDataPlugin:
             project_client.agents.messages.create(
                 thread_id=thread.id,
                 role=MessageRole.USER,
-                content=question,
+                content=query,
             )
 
             run = project_client.agents.runs.create_and_process(
                 thread_id=thread.id,
-                agent_id=agent.id,
-                tool_choice={"type": "azure_ai_search"}
+                agent_id=agent.id
             )
 
             if run.status == "failed":
                 print(f"Run failed: {run.last_error}")
-            else:
-                def convert_citation_markers(text):
-                    def replace_marker(match):
-                        parts = match.group(1).split(":")
-                        if len(parts) == 2 and parts[1].isdigit():
-                            new_index = int(parts[1]) + 1
-                            return f"[{new_index}]"
-                        return match.group(0)
+                return "Details could not be retrieved. Please try again later."
 
-                    return re.sub(r'【(\d+:\d+)†source】', replace_marker, text)
+            chartdata = ""
+            messages = project_client.agents.messages.list(thread_id=thread.id, order=ListSortOrder.ASCENDING)
+            for msg in messages:
+                if msg.role == MessageRole.AGENT and msg.text_messages:
+                    chartdata = msg.text_messages[-1].text.value
+                    break
+            # Clean up
+            project_client.agents.threads.delete(thread_id=thread.id)
 
-                for run_step in project_client.agents.run_steps.list(thread_id=thread.id, run_id=run.id):
-                    if isinstance(run_step.step_details, RunStepToolCallDetails):
-                        for tool_call in run_step.step_details.tool_calls:
-                            output_data = tool_call['azure_ai_search']['output']
-                            tool_output = ast.literal_eval(output_data) if isinstance(output_data, str) else output_data
-                            urls = tool_output.get("metadata", {}).get("get_urls", [])
-                            titles = tool_output.get("metadata", {}).get("titles", [])
-
-                            for i, url in enumerate(urls):
-                                title = titles[i] if i < len(titles) else ""
-                                answer["citations"].append({"url": url, "title": title})
-
-                messages = project_client.agents.messages.list(thread_id=thread.id, order=ListSortOrder.ASCENDING)
-                for msg in messages:
-                    if msg.role == MessageRole.AGENT and msg.text_messages:
-                        answer["answer"] = msg.text_messages[-1].text.value
-                        answer["answer"] = convert_citation_markers(answer["answer"])
-                        break
-
-                project_client.agents.threads.delete(thread_id=thread.id)
         except Exception:
-            return "Details could not be retrieved. Please try again later."
-        return answer
+            chartdata = 'Details could not be retrieved. Please try again later.'
+        return chartdata

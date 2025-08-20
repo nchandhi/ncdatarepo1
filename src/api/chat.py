@@ -17,7 +17,7 @@ from types import SimpleNamespace
 
 import pyodbc
 import httpx
-from azure.ai.agents.models import TruncationObject, MessageRole, ListSortOrder
+from azure.ai.agents.models import TruncationObject
 from azure.identity.aio import DefaultAzureCredential
 from azure.monitor.events.extension import track_event
 from azure.monitor.opentelemetry import configure_azure_monitor
@@ -29,8 +29,6 @@ from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
 from semantic_kernel.agents import AzureAIAgentThread
 from semantic_kernel.exceptions.agent_exceptions import AgentException
-
-from agent_factory import AgentFactory, AgentType
 
 load_dotenv()
 
@@ -221,62 +219,6 @@ def format_stream_response(chat_completion_chunk, history_metadata, apim_request
     return {}
 
 
-async def process_rag_response(rag_response, query):
-    """
-    Uses the ChartAgent directly (agentic call) to extract chart data for Chart.js.
-    """
-    try:
-        user_prompt = f"""Generate chart data for -
-        {query}
-        {rag_response}
-        """
-
-        agent_info = await AgentFactory.get_agent(AgentType.CHART)
-        agent = agent_info["agent"]
-        client = agent_info["client"]
-
-        thread = client.agents.threads.create()
-
-        client.agents.messages.create(
-            thread_id=thread.id,
-            role=MessageRole.USER,
-            content=user_prompt
-        )
-
-        run = client.agents.runs.create_and_process(
-            thread_id=thread.id,
-            agent_id=agent.id
-        )
-
-        if run.status == "failed":
-            logger.error(f"[Chart Agent] Run failed: {run.last_error}")
-            return {"error": "Chart could not be generated due to agent failure."}
-
-        chart_json = ""
-        messages = client.agents.messages.list(thread_id=thread.id, order=ListSortOrder.ASCENDING)
-        for msg in messages:
-            if msg.role == MessageRole.AGENT and msg.text_messages:
-                chart_json = msg.text_messages[-1].text.value.strip()
-                break
-
-        client.agents.threads.delete(thread_id=thread.id)
-
-        chart_json = chart_json.replace("```json", "").replace("```", "").strip()
-        chart_data = json.loads(chart_json)
-
-        if not chart_data or "error" in chart_data:
-            return {
-                "error": chart_data.get("error", "Chart could not be generated from this data."),
-                "hint": "Try asking a question with some numerical values, like 'sales per region' or 'calls per day'."
-            }
-
-        return chart_data
-
-    except Exception as e:
-        logger.error("Agent error in chart generation: %s", e)
-        return {"error": "Chart could not be generated from this data. Please ask a different question."}
-
-
 # Global thread cache
 thread_cache = None
 
@@ -411,31 +353,6 @@ async def stream_chat_request(request_body, conversation_id, query, agent):
     return generate()
 
 
-async def complete_chat_request(query, last_rag_response=None):
-    """
-    Completes a chat request by generating a chart from the RAG response.
-    """
-    if not last_rag_response:
-        return {"error": "A previous RAG response is required to generate a chart."}
-
-    # Process RAG response to generate chart data
-    chart_data = await process_rag_response(last_rag_response, query)
-
-    if not chart_data or "error" in chart_data:
-        return {
-            "error": "Chart could not be generated from this data. Please ask a different question.",
-            "error_desc": str(chart_data),
-        }
-
-    logger.info("Successfully generated chart data.")
-    return {
-        "id": str(uuid.uuid4()),
-        "model": "azure-openai",
-        "created": int(time.time()),
-        "object": chart_data,
-    }
-
-
 @router.post("/chat")
 async def conversation(request: Request):
     """Handle chat requests - streaming text or chart generation based on query keywords."""
@@ -447,27 +364,15 @@ async def conversation(request: Request):
         logger.info("Received last_rag_response: %s", last_rag_response)
 
         query = request_json.get("messages")[-1].get("content")
-        is_chart_query = any(
-            term in query.lower()
-            for term in ["chart", "graph", "visualize", "plot"]
-        )
 
         agent = request.app.state.agent
 
-        if not is_chart_query:
-            result = await stream_chat_request(request_json, conversation_id, query, agent)
-            track_event_if_configured(
-                "ChatStreamSuccess",
-                {"conversation_id": conversation_id, "query": query}
-            )
-            return StreamingResponse(result, media_type="application/json-lines")
-        else:
-            result = await complete_chat_request(query, last_rag_response)
-            track_event_if_configured(
-                "ChartChatSuccess",
-                {"conversation_id": conversation_id, "query": query}
-            )
-            return JSONResponse(content=result)
+        result = await stream_chat_request(request_json, conversation_id, query, agent)
+        track_event_if_configured(
+            "ChatStreamSuccess",
+            {"conversation_id": conversation_id, "query": query}
+        )
+        return StreamingResponse(result, media_type="application/json-lines")
 
     except Exception as ex:
         logger.exception("Error in conversation endpoint: %s", str(ex))
