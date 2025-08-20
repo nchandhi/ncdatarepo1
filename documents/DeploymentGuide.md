@@ -2,21 +2,17 @@
 
 ## **Pre-requisites**
 
-To deploy this solution, ensure you have access to an [Azure subscription](https://azure.microsoft.com/free/) with the necessary permissions to create **resource groups, resources, app registrations, and assign roles at the resource group level**. This should include Contributor role at the subscription level and Role Based Access Control (RBAC) permissions at the subscription and/or resource group level. Follow the steps in [Azure Account Set Up](./AzureAccountSetUp.md).
+To deploy this solution, ensure you have access to an [Azure subscription](https://azure.microsoft.com/free/) with the necessary permissions to create **resource groups, resources, app registrations, and assign roles at the resource group level**. This should include Contributor role at the subscription level and Role Based Access Control (RBAC) permissions at the subscription and/or resource group level. Follow the steps in [Azure Account Set Up](./AzureAccountSetUp.md). Follow the steps in [Fabric Capacity Set Up](https://learn.microsoft.com/en-us/fabric/admin/capacity-settings?tabs=fabric-capacity#create-a-new-capacity).
 
 Check the [Azure Products by Region](https://azure.microsoft.com/en-us/explore/global-infrastructure/products-by-region/?products=all&regions=all) page and select a **region** where the following services are available:
 
+- [Microsoft Fabric](https://learn.microsoft.com/en-us/fabric/)
 - [Azure AI Foundry](https://learn.microsoft.com/en-us/azure/ai-foundry)
-- [Azure AI Content Understanding Service](https://learn.microsoft.com/en-us/azure/ai-services/content-understanding/)
 - [Azure OpenAI Service](https://learn.microsoft.com/en-us/azure/ai-services/openai/)
 - [GPT Model Capacity](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models)
-- [Azure AI Search](https://learn.microsoft.com/en-us/azure/search/search-what-is-azure-search)
-- [Azure SQL Database](https://learn.microsoft.com/en-us/azure/azure-sql/database/sql-database-paas-overview)
-- [Azure Cosmos DB](https://learn.microsoft.com/en-us/azure/cosmos-db/introduction)
 - [Azure Container Apps](https://learn.microsoft.com/en-us/azure/container-apps/)
 - [Azure Container Registry](https://learn.microsoft.com/en-us/azure/container-registry/)
 - [Embedding Deployment Capacity](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models#embedding-models)
-- [Azure Semantic Search](./AzureSemanticSearchRegion.md)
 
 Here are some example regions where the services are available: East US, East US2, Australia East, UK South, France Central.
 
@@ -109,8 +105,6 @@ When you start the deployment, most parameters will have **default values**, but
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------- |
 | **Azure Region**                            | The region where resources will be created.                                                               | *(empty)*              |
 | **Environment Name**                        | A **3–20 character alphanumeric value** used to generate a unique ID to prefix the resources.             | env\_name              |
-| **Azure AI Content Understanding Location** | Region for content understanding resources.                                                               | swedencentral          |
-| **Secondary Location**                      | A **less busy** region for **Azure SQL and Azure Cosmos DB**, useful in case of availability constraints. | eastus2                |
 | **Deployment Type**                         | Select from a drop-down list (allowed: `Standard`, `GlobalStandard`).                                     | GlobalStandard         |
 | **GPT Model**                               | Choose from **gpt-4, gpt-4o, gpt-4o-mini**.                                                               | gpt-4o-mini            |
 | **GPT Model Version**                       | The version of the selected GPT model.                                                                    | 2024-07-18             |
@@ -185,6 +179,11 @@ Once you've opened the project in [Codespaces](#github-codespaces), [Dev Contain
 
 6. If you are done trying out the application, you can delete the resources by running `azd down`.
 
+
+## Fabric Deployment 
+
+1. Follow the steps in [Fabric Deployment](./Fabric_deployment.md) to create a Fabric workspace and deploy Fabric resources
+ 
 ## Post Deployment Steps
 
 1. **Add App Authentication**
