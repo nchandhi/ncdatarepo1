@@ -93,7 +93,7 @@ var containerRegistryName = '${abbrs.containers.containerRegistry}${solutionPref
 var containerRegistryNameCleaned = replace(containerRegistryName, '-', '')
 var acrName = useLocalBuildLower == 'true' ? containerRegistryNameCleaned : 'dataagentscontainerreg'
 
-var baseUrl = 'https://raw.githubusercontent.com/nchandhi/ncdatarepo1/main/'
+var baseUrl = 'https://raw.githubusercontent.com/nchandhi/ncdatarepo1/psl-bicep-agent/'
 
 // ========== Resource Group Tag ========== //
 resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = {
