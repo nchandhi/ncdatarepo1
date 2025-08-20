@@ -282,6 +282,8 @@ module backend_docker 'deploy_backend_docker.bicep' = {
       APPLICATIONINSIGHTS_CONNECTION_STRING: aifoundry.outputs.applicationInsightsConnectionString
       DUMMY_TEST: 'True'
       SOLUTION_NAME: solutionPrefix
+
+      AGENT_ID: createAgent.outputs.agentId
     }
   }
   scope: resourceGroup(resourceGroup().name)
@@ -345,3 +347,4 @@ output AZURE_ENV_IMAGETAG string = imageTag
 output API_APP_URL string = backend_docker.outputs.appUrl
 output WEB_APP_URL string = frontend_docker.outputs.appUrl
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = aifoundry.outputs.applicationInsightsConnectionString
+output AGENT_ID string = createAgent.outputs.agentId
