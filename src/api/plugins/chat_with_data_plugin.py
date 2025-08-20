@@ -16,11 +16,12 @@ from azure.ai.agents.models import (
     MessageRole,
     RunStepToolCallDetails)
 
+from common.config.config import Config
 from common.database.sqldb_service import execute_sql_query
 from common.config.config import Config
 from agents.search_agent_factory import SearchAgentFactory
-from agents.sql_agent_factory import SQLAgentFactory
-
+from azure.identity import DefaultAzureCredential
+from azure.ai.projects import AIProjectClient
 
 class ChatWithDataPlugin:
     """Plugin for handling chat interactions with data using various AI agents."""
@@ -34,6 +35,9 @@ class ChatWithDataPlugin:
         self.azure_ai_search_connection_name = config.azure_ai_search_connection_name
         self.azure_ai_search_index = config.azure_ai_search_index
         self.use_ai_project_client = config.use_ai_project_client
+        self.ai_project_endpoint = config.ai_project_endpoint
+        self.ai_project_api_version = config.ai_project_api_version
+        self.foundry_sql_agent_id = config.foundry_sql_agent_id
 
     @kernel_function(name="ChatWithSQLDatabase",
                      description="Provides quantified results from the database.")
@@ -54,10 +58,15 @@ class ChatWithDataPlugin:
 
         query = input
         try:
-            agent_info = await SQLAgentFactory.get_agent()
-            agent = agent_info["agent"]
-            project_client = agent_info["client"]
+            # agent_info = await SQLAgentFactory.get_agent()
+            # agent = agent_info["agent"]
+            # project_client = agent_info["client"]
 
+            project_client = AIProjectClient(
+                endpoint=self.ai_project_endpoint,
+                credential=DefaultAzureCredential(exclude_interactive_browser_credential=False),
+                api_version=self.ai_project_api_version,
+            )
             thread = project_client.agents.threads.create()
 
             project_client.agents.messages.create(
@@ -68,7 +77,7 @@ class ChatWithDataPlugin:
 
             run = project_client.agents.runs.create_and_process(
                 thread_id=thread.id,
-                agent_id=agent.id
+                agent_id=self.foundry_sql_agent_id, 
             )
 
             if run.status == "failed":
@@ -88,9 +97,11 @@ class ChatWithDataPlugin:
             # Clean up
             project_client.agents.threads.delete(thread_id=thread.id)
 
-        except Exception:
+        except Exception as e:
+            print(f"Fabric-SQL-Kernel-error: {e}", flush=True)
             answer = 'Details could not be retrieved. Please try again later.'
 
+        print(f"SQL-Kernel-response: {answer}", flush=True)
         return answer
 
     @kernel_function(name="ChatWithCallTranscripts", description="Provides summaries or detailed explanations from the search index.")

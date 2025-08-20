@@ -51,3 +51,6 @@ class Config:
 
         self.solution_name = os.getenv("SOLUTION_NAME", "")
         self.app_env = os.getenv("APP_ENV", "prod").lower()
+
+        # Agent configuration
+        self.foundry_sql_agent_id = os.getenv("AGENT_ID")
