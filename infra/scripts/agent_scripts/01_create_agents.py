@@ -18,12 +18,22 @@ project_client = AIProjectClient(
     credential=ManagedIdentityCredential(client_id=MANAGED_IDENTITY_CLIENT_ID),
 )
 
-instructions='''You are a helpful assistant'''
+instructions = '''You are an assistant that helps generate valid T-SQL queries.
+        Generate a valid T-SQL query for the user's request using these tables:
+        1. Table: km_processed_data
+            Columns: ConversationId, EndTime, StartTime, Content, summary, satisfied, sentiment, topic, keyphrases, complaint
+        2. Table: processed_data_key_phrases
+            Columns: ConversationId, key_phrase, sentiment
+        Use accurate and semantically appropriate SQL expressions, data types, functions, aliases, and conversions based strictly on the column definitions and the explicit or implicit intent of the user query.
+        Avoid assumptions or defaults not grounded in schema or context.
+        Ensure all aggregations, filters, grouping logic, and time-based calculations are precise, logically consistent, and reflect the user's intent without ambiguity.
+        **Always** return a valid T-SQL query. Only return the SQL query text—no explanations.'''
+
 with project_client:
     agents_client = project_client.agents
     agent = agents_client.create_agent(
         model='gpt-4o-mini',
-        name="my-agent2",
+        name="my-DA-ChatWithSQLDbAgent-",
         instructions=instructions
     )
     print(agent.id)
