@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.37.4.10188",
-      "templateHash": "1964142168155863143"
+      "version": "0.30.23.60470",
+      "templateHash": "17438583474020572102"
     }
   },
   "parameters": {
@@ -371,9 +371,7 @@
     "solutionLocation": "[if(empty(parameters('AZURE_LOCATION')), resourceGroup().location, parameters('AZURE_LOCATION'))]",
     "uniqueId": "[toLower(uniqueString(subscription().id, parameters('environmentName'), variables('solutionLocation')))]",
     "solutionPrefix": "[format('da{0}', padLeft(take(variables('uniqueId'), 12), 12, '0'))]",
-    "containerRegistryName": "[format('{0}{1}', variables('abbrs').containers.containerRegistry, variables('solutionPrefix'))]",
-    "containerRegistryNameCleaned": "[replace(variables('containerRegistryName'), '-', '')]",
-    "acrName": "[if(equals(variables('useLocalBuildLower'), 'true'), variables('containerRegistryNameCleaned'), 'dataagentscontainerreg')]",
+    "acrName": "dataagentscontainerreg",
     "baseUrl": "https://raw.githubusercontent.com/nchandhi/ncdatarepo1/psl-bicep-agent/"
   },
   "resources": [
@@ -414,8 +412,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.37.4.10188",
-              "templateHash": "10516216433256178074"
+              "version": "0.30.23.60470",
+              "templateHash": "17731428009052197682"
             }
           },
           "parameters": {
@@ -525,8 +523,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.37.4.10188",
-              "templateHash": "14271615631315890723"
+              "version": "0.30.23.60470",
+              "templateHash": "9273597293012945961"
             }
           },
           "parameters": {
@@ -672,8 +670,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.37.4.10188",
-              "templateHash": "17157865644779764224"
+              "version": "0.30.23.60470",
+              "templateHash": "7693840590620007524"
             }
           },
           "parameters": {
@@ -1466,8 +1464,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.37.4.10188",
-                      "templateHash": "8500272062394558146"
+                      "version": "0.30.23.60470",
+                      "templateHash": "12205957099854323574"
                     }
                   },
                   "parameters": {
@@ -1576,8 +1574,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.37.4.10188",
-                      "templateHash": "12932621478221424981"
+                      "version": "0.30.23.60470",
+                      "templateHash": "10819110645514795813"
                     }
                   },
                   "parameters": {
@@ -1689,8 +1687,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.37.4.10188",
-                      "templateHash": "7024695126490280481"
+                      "version": "0.30.23.60470",
+                      "templateHash": "7452802017248155173"
                     }
                   },
                   "parameters": {
@@ -1900,8 +1898,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.37.4.10188",
-                      "templateHash": "7024695126490280481"
+                      "version": "0.30.23.60470",
+                      "templateHash": "7452802017248155173"
                     }
                   },
                   "parameters": {
@@ -2177,8 +2175,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.37.4.10188",
-              "templateHash": "9656126541580669905"
+              "version": "0.30.23.60470",
+              "templateHash": "8448112343660049563"
             }
           },
           "parameters": {
@@ -2352,8 +2350,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.37.4.10188",
-              "templateHash": "2036911746658970766"
+              "version": "0.30.23.60470",
+              "templateHash": "16071490364522806209"
             }
           },
           "parameters": {
@@ -2394,7 +2392,7 @@
           "resources": [
             {
               "copy": {
-                "name": "database::list",
+                "name": "list",
                 "count": "[length(variables('containers'))]"
               },
               "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
@@ -2570,8 +2568,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.37.4.10188",
-              "templateHash": "16150710887401217776"
+              "version": "0.30.23.60470",
+              "templateHash": "15451553403479724112"
             }
           },
           "parameters": {
@@ -2725,8 +2723,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.37.4.10188",
-                      "templateHash": "4283535662073754277"
+                      "version": "0.30.23.60470",
+                      "templateHash": "15901685393789322581"
                     }
                   },
                   "parameters": {
@@ -2823,7 +2821,10 @@
                         "cleanupPreference": "OnSuccess",
                         "arguments": "[join(createArray(format('-SqlServerName ''{0}''', parameters('sqlServerName')), format('-SqlDatabaseName ''{0}''', parameters('sqlDatabaseName')), format('-ClientId ''{0}''', parameters('principalId')), format('-DisplayName ''{0}''', parameters('principalName')), format('-DatabaseRoles ''{0}''', join(parameters('databaseRoles'), ','))), ' ')]",
                         "scriptContent": "[variables('$fxv#0')]"
-                      }
+                      },
+                      "dependsOn": [
+                        "managedIdentity"
+                      ]
                     }
                   }
                 }
@@ -2886,8 +2887,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.37.4.10188",
-              "templateHash": "9290498436267455866"
+              "version": "0.30.23.60470",
+              "templateHash": "6771423041094896013"
             }
           },
           "parameters": {
@@ -2975,8 +2976,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.37.4.10188",
-              "templateHash": "13291712480126887984"
+              "version": "0.30.23.60470",
+              "templateHash": "740602014883680319"
             }
           },
           "parameters": {
@@ -3058,6 +3059,12 @@
           },
           "projectEndpoint": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, resourceGroup().name), 'Microsoft.Resources/deployments', 'deploy_ai_foundry'), '2022-09-01').outputs.projectEndpoint.value]"
+          },
+          "solutionName": {
+            "value": "[variables('solutionPrefix')]"
+          },
+          "gptModelName": {
+            "value": "[parameters('gptModelName')]"
           }
         },
         "template": {
@@ -3067,7 +3074,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.30.23.60470",
-              "templateHash": "16958978815016980343"
+              "templateHash": "16694761092521502370"
             }
           },
           "parameters": {
@@ -3091,6 +3098,12 @@
             },
             "projectEndpoint": {
               "type": "string"
+            },
+            "solutionName": {
+              "type": "string"
+            },
+            "gptModelName": {
+              "type": "string"
             }
           },
           "resources": [
@@ -3109,7 +3122,7 @@
               "properties": {
                 "azCliVersion": "2.52.0",
                 "primaryScriptUri": "[format('{0}infra/scripts/run_create_agent_scripts.sh', parameters('baseUrl'))]",
-                "arguments": "[format('{0} {1} {2} {3}', parameters('baseUrl'), parameters('keyVaultName'), parameters('managedIdentityClientId'), parameters('projectEndpoint'))]",
+                "arguments": "[format('{0} {1} {2} {3} {4} {5}', parameters('baseUrl'), parameters('keyVaultName'), parameters('managedIdentityClientId'), parameters('projectEndpoint'), parameters('solutionName'), parameters('gptModelName'))]",
                 "timeout": "PT1H",
                 "retentionInterval": "PT1H",
                 "cleanupPreference": "OnSuccess"
@@ -3117,9 +3130,17 @@
             }
           ],
           "outputs": {
-            "agentId": {
+            "orchestratorAgentId": {
               "type": "string",
-              "value": "[reference(resourceId('Microsoft.Resources/deploymentScripts', 'run_agent_scripts'), '2023-08-01').outputs.agentId]"
+              "value": "[reference(resourceId('Microsoft.Resources/deploymentScripts', 'run_agent_scripts'), '2023-08-01').outputs.orchestratorAgentId]"
+            },
+            "sqlAgentId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Resources/deploymentScripts', 'run_agent_scripts'), '2023-08-01').outputs.sqlAgentId]"
+            },
+            "chartAgentId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Resources/deploymentScripts', 'run_agent_scripts'), '2023-08-01').outputs.chartAgentId]"
             }
           }
         }
@@ -3152,8 +3173,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.37.4.10188",
-              "templateHash": "11854622383735329272"
+              "version": "0.30.23.60470",
+              "templateHash": "953975247217569065"
             },
             "description": "Creates an Azure App Service plan."
           },
@@ -3290,7 +3311,13 @@
               "APPLICATIONINSIGHTS_CONNECTION_STRING": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, resourceGroup().name), 'Microsoft.Resources/deployments', 'deploy_ai_foundry'), '2022-09-01').outputs.applicationInsightsConnectionString.value]",
               "DUMMY_TEST": "True",
               "SOLUTION_NAME": "[variables('solutionPrefix')]",
-              "AGENT_ID": "[reference(resourceId('Microsoft.Resources/deployments', 'run_agent_scripts'), '2022-09-01').outputs.agentId.value]"
+              "APP_ENV": "Prod",
+              "AGENT_ID_ORCHESTRATOR": "[reference(resourceId('Microsoft.Resources/deployments', 'run_agent_scripts'), '2022-09-01').outputs.orchestratorAgentId.value]",
+              "AGENT_ID_SQL": "[reference(resourceId('Microsoft.Resources/deployments', 'run_agent_scripts'), '2022-09-01').outputs.sqlAgentId.value]",
+              "AGENT_ID_CHART": "[reference(resourceId('Microsoft.Resources/deployments', 'run_agent_scripts'), '2022-09-01').outputs.chartAgentId.value]",
+              "FABRIC_SQL_DATABASE": "",
+              "FABRIC_SQL_SERVER": "",
+              "FABRIC_SQL_CONNECTIONSTRING": ""
             }
           }
         },
@@ -3300,8 +3327,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.37.4.10188",
-              "templateHash": "13418045476580166741"
+              "version": "0.30.23.60470",
+              "templateHash": "11407614926144872472"
             }
           },
           "parameters": {
@@ -3432,8 +3459,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.37.4.10188",
-                      "templateHash": "3401191210177836889"
+                      "version": "0.30.23.60470",
+                      "templateHash": "17046884165398746428"
                     }
                   },
                   "parameters": {
@@ -3554,8 +3581,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.37.4.10188",
-                              "templateHash": "3192232430579364811"
+                              "version": "0.30.23.60470",
+                              "templateHash": "16930852302813854027"
                             },
                             "description": "Updates app settings for an Azure App Service."
                           },
@@ -3627,8 +3654,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.37.4.10188",
-                      "templateHash": "8500272062394558146"
+                      "version": "0.30.23.60470",
+                      "templateHash": "12205957099854323574"
                     }
                   },
                   "parameters": {
@@ -3732,8 +3759,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.37.4.10188",
-                      "templateHash": "7024695126490280481"
+                      "version": "0.30.23.60470",
+                      "templateHash": "7452802017248155173"
                     }
                   },
                   "parameters": {
@@ -3973,8 +4000,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.37.4.10188",
-              "templateHash": "16874170101300899702"
+              "version": "0.30.23.60470",
+              "templateHash": "12746343700329661086"
             }
           },
           "parameters": {
@@ -4040,8 +4067,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.37.4.10188",
-                      "templateHash": "3401191210177836889"
+                      "version": "0.30.23.60470",
+                      "templateHash": "17046884165398746428"
                     }
                   },
                   "parameters": {
@@ -4162,8 +4189,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.37.4.10188",
-                              "templateHash": "3192232430579364811"
+                              "version": "0.30.23.60470",
+                              "templateHash": "16930852302813854027"
                             },
                             "description": "Updates app settings for an Azure App Service."
                           },
@@ -4386,9 +4413,29 @@
       "type": "string",
       "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, resourceGroup().name), 'Microsoft.Resources/deployments', 'deploy_ai_foundry'), '2022-09-01').outputs.applicationInsightsConnectionString.value]"
     },
-    "AGENT_ID": {
+    "AGENT_ID_ORCHESTRATOR": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'run_agent_scripts'), '2022-09-01').outputs.agentId.value]"
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'run_agent_scripts'), '2022-09-01').outputs.orchestratorAgentId.value]"
+    },
+    "AGENT_ID_SQL": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'run_agent_scripts'), '2022-09-01').outputs.sqlAgentId.value]"
+    },
+    "AGENT_ID_CHART": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'run_agent_scripts'), '2022-09-01').outputs.chartAgentId.value]"
+    },
+    "FABRIC_SQL_DATABASE": {
+      "type": "string",
+      "value": ""
+    },
+    "FABRIC_SQL_SERVER": {
+      "type": "string",
+      "value": ""
+    },
+    "FABRIC_SQL_CONNECTIONSTRING": {
+      "type": "string",
+      "value": ""
     }
   }
 }

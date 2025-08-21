@@ -13,7 +13,7 @@ project_client = AIProjectClient(
     credential=ManagedIdentityCredential(client_id=MANAGED_IDENTITY_CLIENT_ID),
 )
 
-conversation_agent_instructions = '''You are a helpful assistant.
+orchestrator_agent_instructions = '''You are a helpful assistant.
         Always return the citations as is in final response.
         Always return citation markers exactly as they appear in the source data, placed in the "answer" field at the correct location. Do not modify, convert, or simplify these markers.
         Only include citation markers if their sources are present in the "citations" list. Only include sources in the "citations" list if they are used in the answer.
@@ -57,10 +57,10 @@ chart_agent_instructions = """You are an assistant that helps generate valid cha
 with project_client:
     agents_client = project_client.agents
 
-    conversation_agent = agents_client.create_agent(
+    orchestrator_agent = agents_client.create_agent(
         model=gptModelName,
-        name=f"bicep-DA-ConversationKnowledgeAgent-{solutionName}",
-        instructions=conversation_agent_instructions
+        name=f"bicep-DA-OrchestratorAgent-{solutionName}",
+        instructions=orchestrator_agent_instructions
     )
 
     sql_agent = agents_client.create_agent(
@@ -76,7 +76,7 @@ with project_client:
     )
 
     print(json.dumps({
-        "conversationAgentId": conversation_agent.id,
+        "orchestratorAgentId": orchestrator_agent.id,
         "sqlAgentId": sql_agent.id,
         "chartAgentId": chart_agent.id
     }))

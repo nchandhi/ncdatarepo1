@@ -29,6 +29,6 @@ resource create_agent 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
   }
 }
 
-output conversationAgentId string = create_agent.properties.outputs.conversationAgentId
+output orchestratorAgentId string = create_agent.properties.outputs.orchestratorAgentId
 output sqlAgentId string = create_agent.properties.outputs.sqlAgentId
 output chartAgentId string = create_agent.properties.outputs.chartAgentId

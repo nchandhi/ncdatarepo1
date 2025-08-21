@@ -9,67 +9,25 @@ from typing import Dict, Any, Annotated
 
 import pyodbc
 from azure.ai.agents.models import MessageRole, ListSortOrder
-from azure.identity.aio import DefaultAzureCredential
 from dotenv import load_dotenv
 from semantic_kernel.functions.kernel_function_decorator import kernel_function
-
 from agent_factory import AgentFactory, AgentType
+from azure.ai.projects import AIProjectClient
+from azure.identity import DefaultAzureCredential
+from history_sql import execute_sql_query
 
 load_dotenv()
-
-
-async def get_db_connection():
-    """Get a connection to the SQL database"""
-    database = os.getenv("SQLDB_DATABASE")
-    server = os.getenv("SQLDB_SERVER")
-    driver = "{ODBC Driver 17 for SQL Server}"
-    mid_id = os.getenv("SQLDB_USER_MID")
-
-    async with DefaultAzureCredential(managed_identity_client_id=mid_id) as credential:
-        token = await credential.get_token("https://database.windows.net/.default")
-        token_bytes = token.token.encode("utf-16-LE")
-        token_struct = struct.pack(
-            f"<I{len(token_bytes)}s",
-            len(token_bytes),
-            token_bytes
-        )
-        SQL_COPT_SS_ACCESS_TOKEN = 1256
-
-        # Set up the connection
-        connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};"
-        conn = pyodbc.connect(
-            connection_string, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct}
-        )
-
-        logging.info("Connected using Default Azure Credential")
-        return conn
-
-
-async def execute_sql_query(sql_query):
-    """
-    Executes a given SQL query and returns the result as a concatenated string.
-    """
-    conn = await get_db_connection()
-    cursor = None
-    try:
-        cursor = conn.cursor()
-        cursor.execute(sql_query)
-        result = ''.join(str(row) for row in cursor.fetchall())
-        return result
-    except Exception as e:
-        logging.error("Error executing SQL query: %s", e)
-        return None
-    finally:
-        if cursor:
-            cursor.close()
-        conn.close()
-
 
 class ChatWithDataPlugin:
     """Plugin for handling chat interactions with data using various AI agents."""
 
+    def __init__(self):
+        self.ai_project_endpoint = os.getenv("AZURE_AI_AGENT_ENDPOINT")
+        self.ai_project_api_version = os.getenv("AZURE_AI_AGENT_API_VERSION", "2025-05-01")
+        self.foundry_sql_agent_id = os.getenv("AGENT_ID_SQL")
+
     @kernel_function(name="ChatWithSQLDatabase",
-                     description="Provides quantified results from the database.")
+                     description="Provides quantified results, metrics, or structured data from the SQL database.")
     async def get_sql_response(
             self,
             input: Annotated[str, "the question"]
@@ -87,10 +45,12 @@ class ChatWithDataPlugin:
 
         query = input
         try:
-            agent_info = await AgentFactory.get_agent(AgentType.SQL)
-            agent = agent_info["agent"]
-            project_client = agent_info["client"]
-
+            project_client = AIProjectClient(
+                endpoint=self.ai_project_endpoint,
+                credential=DefaultAzureCredential(exclude_interactive_browser_credential=False),
+                api_version=self.ai_project_api_version,
+            )
+           
             thread = project_client.agents.threads.create()
 
             project_client.agents.messages.create(
@@ -101,7 +61,7 @@ class ChatWithDataPlugin:
 
             run = project_client.agents.runs.create_and_process(
                 thread_id=thread.id,
-                agent_id=agent.id
+                agent_id=self.foundry_sql_agent_id, 
             )
 
             if run.status == "failed":
@@ -121,9 +81,11 @@ class ChatWithDataPlugin:
             # Clean up
             project_client.agents.threads.delete(thread_id=thread.id)
 
-        except Exception:
+        except Exception as e:
+            print(f"Fabric-SQL-Kernel-error: {e}", flush=True)
             answer = 'Details could not be retrieved. Please try again later.'
 
+        print(f"fabric-SQL-Kernel-response: {answer}", flush=True)
         return answer
 
     @kernel_function(name="GenerateChartData", description="Generates Chart.js v4.4.4 compatible JSON data for data visualization requests using current and immediate previous context.")

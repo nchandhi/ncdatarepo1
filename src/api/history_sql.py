@@ -79,20 +79,18 @@ async def get_fabric_db_connection():
         Connection: Database connection object, or None if connection fails.
     """
     app_env = os.getenv("APP_ENV", "prod").lower()
-    database = os.getenv("FABRIC_SQLDB_DATABASE")
-    server = os.getenv("FABRIC_SQLDB_SERVER")
+    database = os.getenv("FABRIC_SQL_DATABASE")
+    server = os.getenv("FABRIC_SQL_SERVER")
     driver = "{ODBC Driver 17 for SQL Server}"
-    fabric_sqldb_connection_string = os.getenv("FABRIC_SQLDB_CONNECTION_STRING", "")
+    fabric_sql_connectionstring = os.getenv("FABRIC_SQL_CONNECTIONSTRING", "")
 
     try:
-        # logging.info("FABRIC-SQL-app_env: %s" % app_env)
         # Set up the connection
         conn = None
         connection_string = ""
         if app_env == 'dev':
             async with AzureCliCredential() as credential:
                 token = await credential.get_token("https://database.windows.net/.default")
-                # logging.info("FABRIC-SQL-TOKEN: %s" % token.token)
                 token_bytes = token.token.encode("utf-16-LE")
                 token_struct = struct.pack(
                     f"<I{len(token_bytes)}s",
@@ -107,12 +105,9 @@ async def get_fabric_db_connection():
                 connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};"
                 conn = pyodbc.connect(connection_string, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct})
         else:
-            connection_string = fabric_sqldb_connection_string
+            connection_string = fabric_sql_connectionstring
             conn = pyodbc.connect(connection_string)
-
-        # logging.info("FABRIC-SQL-connection_string: %s" % connection_string)
-        # logging.info("FABRIC-SQL-User: %s" % conn.getinfo(pyodbc.SQL_USER_NAME))
-        # logging.info("FABRIC-SQL:Successfully Connected to Fabric SQL Database")
+        
         return conn
     except pyodbc.Error as e:
         logging.info("FABRIC-SQL:Failed to connect Fabric SQL Database: %s", e)
@@ -286,6 +281,25 @@ async def run_query_params(sql_query, params: Tuple[Any, ...] = ()):
             cursor.close()
         conn.close()
 
+async def execute_sql_query(sql_query):
+    """
+    Executes a given SQL query and returns the result as a concatenated string.
+    """
+    conn = await get_fabric_db_connection()
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        cursor.execute(sql_query)
+        result = ''.join(str(row) for row in cursor.fetchall())
+        
+        return result
+    except Exception as e:
+        logging.error("Error executing SQL query: %s", e)
+        return None
+    finally:
+        if cursor:
+            cursor.close()
+        conn.close() 
 
 # Configuration variable
 USE_CHAT_HISTORY_ENABLED = os.getenv("USE_CHAT_HISTORY_ENABLED", "true").lower() == "true"

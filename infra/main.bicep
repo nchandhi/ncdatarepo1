@@ -275,13 +275,13 @@ module backend_docker 'deploy_backend_docker.bicep' = {
       SOLUTION_NAME: solutionPrefix
       APP_ENV: 'Prod'
 
-      AGENT_CONVERSATION_ID: createAgent.outputs.conversationAgentId
-      AGENT_SQL_ID: createAgent.outputs.sqlAgentId
-      AGENT_CHART_ID: createAgent.outputs.chartAgentId
+      AGENT_ID_ORCHESTRATOR: createAgent.outputs.orchestratorAgentId
+      AGENT_ID_SQL: createAgent.outputs.sqlAgentId
+      AGENT_ID_CHART: createAgent.outputs.chartAgentId
 
-      FABRIC_SQLDB_DATABASE: ''
-      FABRIC_SQLDB_SERVER: ''
-      FABRIC_SQLDB_CONNECTION_STRING: ''
+      FABRIC_SQL_DATABASE: ''
+      FABRIC_SQL_SERVER: ''
+      FABRIC_SQL_CONNECTIONSTRING: ''
     }
   }
   scope: resourceGroup(resourceGroup().name)
@@ -344,9 +344,9 @@ output AZURE_ENV_IMAGETAG string = imageTag
 output API_APP_URL string = backend_docker.outputs.appUrl
 output WEB_APP_URL string = frontend_docker.outputs.appUrl
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = aifoundry.outputs.applicationInsightsConnectionString
-output AGENT_CONVERSATION_ID string = createAgent.outputs.conversationAgentId
-output AGENT_SQL_ID string = createAgent.outputs.sqlAgentId
-output AGENT_CHART_ID string = createAgent.outputs.chartAgentId
-output FABRIC_SQLDB_DATABASE string = ''
-output FABRIC_SQLDB_SERVER string = ''
-output FABRIC_SQLDB_CONNECTION_STRING string = ''
+output AGENT_ID_ORCHESTRATOR string = createAgent.outputs.orchestratorAgentId
+output AGENT_ID_SQL string = createAgent.outputs.sqlAgentId
+output AGENT_ID_CHART string = createAgent.outputs.chartAgentId
+output FABRIC_SQL_DATABASE string = ''
+output FABRIC_SQL_SERVER string = ''
+output FABRIC_SQL_CONNECTIONSTRING string = ''
