@@ -19,11 +19,13 @@ project_client = AIProjectClient(
 )
 
 instructions = '''You are an assistant that helps generate valid T-SQL queries.
-        Generate a valid T-SQL query for the user's request using these tables:
-        1. Table: km_processed_data
-            Columns: ConversationId, EndTime, StartTime, Content, summary, satisfied, sentiment, topic, keyphrases, complaint
-        2. Table: processed_data_key_phrases
-            Columns: ConversationId, key_phrase, sentiment
+        Generate a valid T-SQL query for the user's request using these tables:    
+        1.Table:dbo.customers
+            Columns: id, first_name, last_name, address, city, state, zip,
+        2.Table: dbo.claims
+            Columns: id, customer_id, claim_type, claim_date, details
+        3.Table: dbo.policies
+            Columns: id, customer_id, type, premium, payment_type, start_date, duration
         Use accurate and semantically appropriate SQL expressions, data types, functions, aliases, and conversions based strictly on the column definitions and the explicit or implicit intent of the user query.
         Avoid assumptions or defaults not grounded in schema or context.
         Ensure all aggregations, filters, grouping logic, and time-based calculations are precise, logically consistent, and reflect the user's intent without ambiguity.
