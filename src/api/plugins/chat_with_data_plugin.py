@@ -17,11 +17,12 @@ from azure.ai.agents.models import (
     RunStepToolCallDetails)
 
 from common.config.config import Config
-from common.database.sqldb_service import execute_sql_query
+# from common.database.sqldb_service import execute_sql_query
 from common.config.config import Config
 from agents.search_agent_factory import SearchAgentFactory
 from azure.identity import DefaultAzureCredential
 from azure.ai.projects import AIProjectClient
+from common.database.fabric_sqldb_service import execute_sql_query
 
 class ChatWithDataPlugin:
     """Plugin for handling chat interactions with data using various AI agents."""
@@ -40,7 +41,7 @@ class ChatWithDataPlugin:
         self.foundry_sql_agent_id = config.foundry_sql_agent_id
 
     @kernel_function(name="ChatWithSQLDatabase",
-                     description="Provides quantified results from the database.")
+                     description="Provides quantified results, metrics, or structured data from the SQL database.")
     async def get_sql_response(
             self,
             input: Annotated[str, "the question"]
