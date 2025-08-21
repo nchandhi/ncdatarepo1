@@ -221,6 +221,8 @@ module createAgent 'run_agent_scripts.bicep' = {
     baseUrl:baseUrl
     keyVaultName:aifoundry.outputs.keyvaultName
     projectEndpoint: aifoundry.outputs.projectEndpoint
+    solutionName: solutionPrefix
+    gptModelName: gptModelName
   }
 }
 
@@ -271,8 +273,15 @@ module backend_docker 'deploy_backend_docker.bicep' = {
       APPLICATIONINSIGHTS_CONNECTION_STRING: aifoundry.outputs.applicationInsightsConnectionString
       DUMMY_TEST: 'True'
       SOLUTION_NAME: solutionPrefix
+      APP_ENV: 'Prod'
 
-      AGENT_ID: createAgent.outputs.agentId
+      AGENT_CONVERSATION_ID: createAgent.outputs.conversationAgentId
+      AGENT_SQL_ID: createAgent.outputs.sqlAgentId
+      AGENT_CHART_ID: createAgent.outputs.chartAgentId
+
+      FABRIC_SQLDB_DATABASE: ''
+      FABRIC_SQLDB_SERVER: ''
+      FABRIC_SQLDB_CONNECTION_STRING: ''
     }
   }
   scope: resourceGroup(resourceGroup().name)
@@ -335,4 +344,9 @@ output AZURE_ENV_IMAGETAG string = imageTag
 output API_APP_URL string = backend_docker.outputs.appUrl
 output WEB_APP_URL string = frontend_docker.outputs.appUrl
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = aifoundry.outputs.applicationInsightsConnectionString
-output AGENT_ID string = createAgent.outputs.agentId
+output AGENT_CONVERSATION_ID string = createAgent.outputs.conversationAgentId
+output AGENT_SQL_ID string = createAgent.outputs.sqlAgentId
+output AGENT_CHART_ID string = createAgent.outputs.chartAgentId
+output FABRIC_SQLDB_DATABASE string = ''
+output FABRIC_SQLDB_SERVER string = ''
+output FABRIC_SQLDB_CONNECTION_STRING string = ''
