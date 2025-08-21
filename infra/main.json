@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.30.23.60470",
-      "templateHash": "3683692789030845294"
+      "version": "0.37.4.10188",
+      "templateHash": "1964142168155863143"
     }
   },
   "parameters": {
@@ -122,13 +122,6 @@
     "AZURE_LOCATION": {
       "type": "string",
       "defaultValue": ""
-    },
-    "useLocalBuild": {
-      "type": "string",
-      "defaultValue": "false",
-      "metadata": {
-        "description": "Set this flag to true only if you are deploying from Local"
-      }
     },
     "aiDeploymentsLocation": {
       "type": "string",
@@ -376,7 +369,6 @@
     },
     "abbrs": "[variables('$fxv#0')]",
     "solutionLocation": "[if(empty(parameters('AZURE_LOCATION')), resourceGroup().location, parameters('AZURE_LOCATION'))]",
-    "useLocalBuildLower": "[toLower(parameters('useLocalBuild'))]",
     "uniqueId": "[toLower(uniqueString(subscription().id, parameters('environmentName'), variables('solutionLocation')))]",
     "solutionPrefix": "[format('da{0}', padLeft(take(variables('uniqueId'), 12), 12, '0'))]",
     "containerRegistryName": "[format('{0}{1}', variables('abbrs').containers.containerRegistry, variables('solutionPrefix'))]",
@@ -422,8 +414,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "17731428009052197682"
+              "version": "0.37.4.10188",
+              "templateHash": "10516216433256178074"
             }
           },
           "parameters": {
@@ -533,8 +525,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "9273597293012945961"
+              "version": "0.37.4.10188",
+              "templateHash": "14271615631315890723"
             }
           },
           "parameters": {
@@ -680,8 +672,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "7693840590620007524"
+              "version": "0.37.4.10188",
+              "templateHash": "17157865644779764224"
             }
           },
           "parameters": {
@@ -1474,8 +1466,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "12205957099854323574"
+                      "version": "0.37.4.10188",
+                      "templateHash": "8500272062394558146"
                     }
                   },
                   "parameters": {
@@ -1584,8 +1576,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "10819110645514795813"
+                      "version": "0.37.4.10188",
+                      "templateHash": "12932621478221424981"
                     }
                   },
                   "parameters": {
@@ -1697,8 +1689,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "7452802017248155173"
+                      "version": "0.37.4.10188",
+                      "templateHash": "7024695126490280481"
                     }
                   },
                   "parameters": {
@@ -1908,8 +1900,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "7452802017248155173"
+                      "version": "0.37.4.10188",
+                      "templateHash": "7024695126490280481"
                     }
                   },
                   "parameters": {
@@ -2185,8 +2177,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "8448112343660049563"
+              "version": "0.37.4.10188",
+              "templateHash": "9656126541580669905"
             }
           },
           "parameters": {
@@ -2360,8 +2352,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "16071490364522806209"
+              "version": "0.37.4.10188",
+              "templateHash": "2036911746658970766"
             }
           },
           "parameters": {
@@ -2402,7 +2394,7 @@
           "resources": [
             {
               "copy": {
-                "name": "list",
+                "name": "database::list",
                 "count": "[length(variables('containers'))]"
               },
               "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
@@ -2578,8 +2570,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "15451553403479724112"
+              "version": "0.37.4.10188",
+              "templateHash": "16150710887401217776"
             }
           },
           "parameters": {
@@ -2733,8 +2725,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "15901685393789322581"
+                      "version": "0.37.4.10188",
+                      "templateHash": "4283535662073754277"
                     }
                   },
                   "parameters": {
@@ -2831,10 +2823,7 @@
                         "cleanupPreference": "OnSuccess",
                         "arguments": "[join(createArray(format('-SqlServerName ''{0}''', parameters('sqlServerName')), format('-SqlDatabaseName ''{0}''', parameters('sqlDatabaseName')), format('-ClientId ''{0}''', parameters('principalId')), format('-DisplayName ''{0}''', parameters('principalName')), format('-DatabaseRoles ''{0}''', join(parameters('databaseRoles'), ','))), ' ')]",
                         "scriptContent": "[variables('$fxv#0')]"
-                      },
-                      "dependsOn": [
-                        "managedIdentity"
-                      ]
+                      }
                     }
                   }
                 }
@@ -2897,8 +2886,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "6771423041094896013"
+              "version": "0.37.4.10188",
+              "templateHash": "9290498436267455866"
             }
           },
           "parameters": {
@@ -2986,8 +2975,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "740602014883680319"
+              "version": "0.37.4.10188",
+              "templateHash": "13291712480126887984"
             }
           },
           "parameters": {
@@ -3163,8 +3152,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "953975247217569065"
+              "version": "0.37.4.10188",
+              "templateHash": "11854622383735329272"
             },
             "description": "Creates an Azure App Service plan."
           },
@@ -3249,9 +3238,6 @@
           "solutionLocation": {
             "value": "[variables('solutionLocation')]"
           },
-          "aideploymentsLocation": {
-            "value": "[parameters('aiDeploymentsLocation')]"
-          },
           "imageTag": {
             "value": "[parameters('imageTag')]"
           },
@@ -3272,9 +3258,6 @@
           },
           "aiServicesName": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, resourceGroup().name), 'Microsoft.Resources/deployments', 'deploy_ai_foundry'), '2022-09-01').outputs.aiServicesName.value]"
-          },
-          "useLocalBuild": {
-            "value": "[variables('useLocalBuildLower')]"
           },
           "azureExistingAIProjectResourceId": {
             "value": "[parameters('azureExistingAIProjectResourceId')]"
@@ -3317,8 +3300,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "8942975418793588346"
+              "version": "0.37.4.10188",
+              "templateHash": "13418045476580166741"
             }
           },
           "parameters": {
@@ -3353,17 +3336,11 @@
             "aiServicesName": {
               "type": "string"
             },
-            "useLocalBuild": {
-              "type": "string"
-            },
             "azureExistingAIProjectResourceId": {
               "type": "string",
               "defaultValue": ""
             },
             "aiSearchName": {
-              "type": "string"
-            },
-            "aideploymentsLocation": {
               "type": "string"
             },
             "name": {
@@ -3421,21 +3398,6 @@
               ]
             },
             {
-              "condition": "[equals(parameters('useLocalBuild'), 'true')]",
-              "type": "Microsoft.Authorization/roleAssignments",
-              "apiVersion": "2022-04-01",
-              "scope": "[format('Microsoft.ContainerRegistry/registries/{0}', parameters('acrName'))]",
-              "name": "[guid(format('{0}-app-module', parameters('name')), resourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d'))]",
-              "properties": {
-                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
-                "principalId": "[reference(resourceId('Microsoft.Resources/deployments', format('{0}-app-module', parameters('name'))), '2022-09-01').outputs.identityPrincipalId.value]",
-                "principalType": "ServicePrincipal"
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Resources/deployments', format('{0}-app-module', parameters('name')))]"
-              ]
-            },
-            {
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2022-09-01",
               "name": "[format('{0}-app-module', parameters('name'))]",
@@ -3460,9 +3422,6 @@
                   "userassignedIdentityId": {
                     "value": "[parameters('userassignedIdentityId')]"
                   },
-                  "useLocalBuild": {
-                    "value": "[parameters('useLocalBuild')]"
-                  },
                   "appSettings": {
                     "value": "[union(parameters('appSettings'), createObject('APPINSIGHTS_INSTRUMENTATIONKEY', reference(parameters('applicationInsightsId'), '2015-05-01').InstrumentationKey, 'REACT_APP_LAYOUT_CONFIG', variables('reactAppLayoutConfig')))]"
                   }
@@ -3473,8 +3432,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "12884926140267872816"
+                      "version": "0.37.4.10188",
+                      "templateHash": "3401191210177836889"
                     }
                   },
                   "parameters": {
@@ -3503,9 +3462,6 @@
                     "userassignedIdentityId": {
                       "type": "string",
                       "defaultValue": ""
-                    },
-                    "useLocalBuild": {
-                      "type": "string"
                     }
                   },
                   "resources": [
@@ -3540,7 +3496,6 @@
                       "properties": {
                         "serverFarmId": "[parameters('appServicePlanId')]",
                         "siteConfig": {
-                          "acrUseManagedIdentityCreds": "[equals(parameters('useLocalBuild'), 'true')]",
                           "alwaysOn": true,
                           "ftpsState": "Disabled",
                           "linuxFxVersion": "[parameters('appImageName')]"
@@ -3599,8 +3554,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.30.23.60470",
-                              "templateHash": "16930852302813854027"
+                              "version": "0.37.4.10188",
+                              "templateHash": "3192232430579364811"
                             },
                             "description": "Updates app settings for an Azure App Service."
                           },
@@ -3672,8 +3627,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "12205957099854323574"
+                      "version": "0.37.4.10188",
+                      "templateHash": "8500272062394558146"
                     }
                   },
                   "parameters": {
@@ -3777,8 +3732,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "7452802017248155173"
+                      "version": "0.37.4.10188",
+                      "templateHash": "7024695126490280481"
                     }
                   },
                   "parameters": {
@@ -4006,9 +3961,6 @@
           "applicationInsightsId": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, resourceGroup().name), 'Microsoft.Resources/deployments', 'deploy_ai_foundry'), '2022-09-01').outputs.applicationInsightsId.value]"
           },
-          "useLocalBuild": {
-            "value": "[variables('useLocalBuildLower')]"
-          },
           "appSettings": {
             "value": {
               "APP_API_BASE_URL": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, resourceGroup().name), 'Microsoft.Resources/deployments', 'deploy_backend_docker'), '2022-09-01').outputs.appUrl.value]"
@@ -4021,8 +3973,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.30.23.60470",
-              "templateHash": "5291742079258284077"
+              "version": "0.37.4.10188",
+              "templateHash": "16874170101300899702"
             }
           },
           "parameters": {
@@ -4048,9 +4000,6 @@
             "appServicePlanId": {
               "type": "string"
             },
-            "useLocalBuild": {
-              "type": "string"
-            },
             "name": {
               "type": "string"
             }
@@ -4059,21 +4008,6 @@
             "imageName": "[format('DOCKER|{0}.azurecr.io/da-app:{1}', parameters('acrName'), parameters('imageTag'))]"
           },
           "resources": [
-            {
-              "condition": "[equals(parameters('useLocalBuild'), 'true')]",
-              "type": "Microsoft.Authorization/roleAssignments",
-              "apiVersion": "2022-04-01",
-              "scope": "[format('Microsoft.ContainerRegistry/registries/{0}', parameters('acrName'))]",
-              "name": "[guid(format('{0}-app-module', parameters('name')), resourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d'))]",
-              "properties": {
-                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
-                "principalId": "[reference(resourceId('Microsoft.Resources/deployments', format('{0}-app-module', parameters('name'))), '2022-09-01').outputs.identityPrincipalId.value]",
-                "principalType": "ServicePrincipal"
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Resources/deployments', format('{0}-app-module', parameters('name')))]"
-              ]
-            },
             {
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2022-09-01",
@@ -4096,9 +4030,6 @@
                   "appImageName": {
                     "value": "[variables('imageName')]"
                   },
-                  "useLocalBuild": {
-                    "value": "[parameters('useLocalBuild')]"
-                  },
                   "appSettings": {
                     "value": "[union(parameters('appSettings'), createObject('APPINSIGHTS_INSTRUMENTATIONKEY', reference(parameters('applicationInsightsId'), '2015-05-01').InstrumentationKey))]"
                   }
@@ -4109,8 +4040,8 @@
                   "metadata": {
                     "_generator": {
                       "name": "bicep",
-                      "version": "0.30.23.60470",
-                      "templateHash": "12884926140267872816"
+                      "version": "0.37.4.10188",
+                      "templateHash": "3401191210177836889"
                     }
                   },
                   "parameters": {
@@ -4139,9 +4070,6 @@
                     "userassignedIdentityId": {
                       "type": "string",
                       "defaultValue": ""
-                    },
-                    "useLocalBuild": {
-                      "type": "string"
                     }
                   },
                   "resources": [
@@ -4176,7 +4104,6 @@
                       "properties": {
                         "serverFarmId": "[parameters('appServicePlanId')]",
                         "siteConfig": {
-                          "acrUseManagedIdentityCreds": "[equals(parameters('useLocalBuild'), 'true')]",
                           "alwaysOn": true,
                           "ftpsState": "Disabled",
                           "linuxFxVersion": "[parameters('appImageName')]"
@@ -4235,8 +4162,8 @@
                           "metadata": {
                             "_generator": {
                               "name": "bicep",
-                              "version": "0.30.23.60470",
-                              "templateHash": "16930852302813854027"
+                              "version": "0.37.4.10188",
+                              "templateHash": "3192232430579364811"
                             },
                             "description": "Updates app settings for an Azure App Service."
                           },
