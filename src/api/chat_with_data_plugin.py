@@ -11,7 +11,6 @@ import pyodbc
 from azure.ai.agents.models import MessageRole, ListSortOrder
 from dotenv import load_dotenv
 from semantic_kernel.functions.kernel_function_decorator import kernel_function
-from agent_factory import AgentFactory, AgentType
 from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
 from history_sql import execute_sql_query
@@ -25,6 +24,7 @@ class ChatWithDataPlugin:
         self.ai_project_endpoint = os.getenv("AZURE_AI_AGENT_ENDPOINT")
         self.ai_project_api_version = os.getenv("AZURE_AI_AGENT_API_VERSION", "2025-05-01")
         self.foundry_sql_agent_id = os.getenv("AGENT_ID_SQL")
+        self.foundry_chart_agent_id = os.getenv("AGENT_ID_CHART")
 
     @kernel_function(name="ChatWithSQLDatabase",
                      description="Provides quantified results, metrics, or structured data from the SQL database.")
@@ -96,9 +96,11 @@ class ChatWithDataPlugin:
         query = input
         query = query.strip()
         try:
-            agent_info = await AgentFactory.get_agent(AgentType.CHART)
-            agent = agent_info["agent"]
-            project_client = agent_info["client"]
+            project_client = AIProjectClient(
+                endpoint=self.ai_project_endpoint,
+                credential=DefaultAzureCredential(exclude_interactive_browser_credential=False),
+                api_version=self.ai_project_api_version,
+            )
 
             thread = project_client.agents.threads.create()
 
@@ -110,7 +112,7 @@ class ChatWithDataPlugin:
 
             run = project_client.agents.runs.create_and_process(
                 thread_id=thread.id,
-                agent_id=agent.id
+                agent_id=self.foundry_chart_agent_id,
             )
 
             if run.status == "failed":
@@ -126,8 +128,11 @@ class ChatWithDataPlugin:
             # Clean up
             project_client.agents.threads.delete(thread_id=thread.id)
 
-        except Exception:
+        except Exception as e:
+            print(f"fabric-Chat-Kernel-error: {e}", flush=True)
             chartdata = 'Details could not be retrieved. Please try again later.'
+        
+        print(f"fabric-Chat-Kernel-response: {chartdata}", flush=True)
         return chartdata
 
     # @kernel_function(name="ChatWithCustomerSales", description="Provides summaries or detailed explanations of customer sales.")

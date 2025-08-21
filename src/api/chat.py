@@ -365,7 +365,7 @@ async def conversation(request: Request):
 
         query = request_json.get("messages")[-1].get("content")
 
-        agent = request.app.state.agent
+        agent = request.app.state.orchestrator_agent
 
         result = await stream_chat_request(request_json, conversation_id, query, agent)
         track_event_if_configured(
