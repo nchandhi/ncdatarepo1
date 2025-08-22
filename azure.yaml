@@ -9,8 +9,8 @@ name: data-agents-fabric-knowledge-mining
 requiredVersions:
   azd: ">= 1.15.0"
 
-metadata:
-  template: data-agents-fabric-knowledge-mining@1.0
+# metadata:
+#   template: data-agents-fabric-knowledge-mining@1.0
 
 hooks:
   postprovision:
