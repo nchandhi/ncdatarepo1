@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.30.23.60470",
-      "templateHash": "17438583474020572102"
+      "templateHash": "10077271948831844977"
     }
   },
   "parameters": {
@@ -3316,8 +3316,7 @@
               "AGENT_ID_SQL": "[reference(resourceId('Microsoft.Resources/deployments', 'run_agent_scripts'), '2022-09-01').outputs.sqlAgentId.value]",
               "AGENT_ID_CHART": "[reference(resourceId('Microsoft.Resources/deployments', 'run_agent_scripts'), '2022-09-01').outputs.chartAgentId.value]",
               "FABRIC_SQL_DATABASE": "",
-              "FABRIC_SQL_SERVER": "",
-              "FABRIC_SQL_CONNECTIONSTRING": ""
+              "FABRIC_SQL_SERVER": ""
             }
           }
         },
@@ -4430,10 +4429,6 @@
       "value": ""
     },
     "FABRIC_SQL_SERVER": {
-      "type": "string",
-      "value": ""
-    },
-    "FABRIC_SQL_CONNECTIONSTRING": {
       "type": "string",
       "value": ""
     }

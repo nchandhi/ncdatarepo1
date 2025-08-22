@@ -81,10 +81,9 @@ async def get_fabric_db_connection():
     database = os.getenv("FABRIC_SQL_DATABASE")
     server = os.getenv("FABRIC_SQL_SERVER")
     driver = "{ODBC Driver 17 for SQL Server}"
-    fabric_sql_connectionstring = os.getenv("FABRIC_SQL_CONNECTIONSTRING", "")
+    api_uid = os.getenv("SQLDB_USER_MID", "")
 
     try:
-        # Set up the connection
         conn = None
         connection_string = ""
         if app_env == 'dev':
@@ -96,15 +95,11 @@ async def get_fabric_db_connection():
                     len(token_bytes),
                     token_bytes
                 )
-                # Format token for ODBC: interleave nulls and prefix length
-                # exptoken = ''.join([c + '\x00' for c in token.token])  # little-endian UTF-16-like
-                # token_struct = struct.pack("=I", len(exptoken)) + exptoken.encode("utf-8")
-
                 SQL_COPT_SS_ACCESS_TOKEN = 1256
                 connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};"
                 conn = pyodbc.connect(connection_string, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct})
         else:
-            connection_string = fabric_sql_connectionstring
+            connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};UID={api_uid};Authentication=ActiveDirectoryMSI;"
             conn = pyodbc.connect(connection_string)
         
         return conn
@@ -129,26 +124,17 @@ async def run_query_and_return_json(sql_query: str):
     try:
         cursor = conn.cursor()
         cursor.execute(sql_query)
-
-        # Extract column names
         columns = [desc[0] for desc in cursor.description]
-
-        # Fetch and convert rows to list of dicts
         result = []
         for row in cursor.fetchall():
             row_dict = {}
             for col_name, value in zip(columns, row):
-                # Convert datetime/date to ISO format for JSON
                 if isinstance(value, (datetime, date)):
                     row_dict[col_name] = value.isoformat()
                 else:
                     row_dict[col_name] = value
             result.append(row_dict)
-
-        # logging.info("FABRIC-SQL-JSON-QUERY: %s" % sql_query)
-        # logging.info("FABRIC-SQL-JSONRESULT: %s" % result)
-
-        # Return JSON string
+       
         return json.dumps(result, indent=2)
     except Exception as e:
         logging.error("Error executing SQL query: %s", e)
@@ -176,24 +162,16 @@ async def run_query_and_return_json_params(sql_query, params: Tuple[Any, ...] = 
     try:
         cursor = conn.cursor()
         cursor.execute(sql_query, params)
-
-        # Extract column names
         columns = [desc[0] for desc in cursor.description]
-
-        # Fetch and convert rows to list of dicts
         result = []
         for row in cursor.fetchall():
             row_dict = {}
             for col_name, value in zip(columns, row):
-                # Convert datetime/date to ISO format for JSON
                 if isinstance(value, (datetime, date)):
                     row_dict[col_name] = value.isoformat()
                 else:
                     row_dict[col_name] = value
             result.append(row_dict)
-
-        # logging.info("FABRIC-SQLDBService-Param-JSON-QUERY: %s" % sql_query)
-        # logging.info("FABRIC-SQLDBService-Param-JSON-RESULT: %s" % result)
 
         return json.dumps(result, indent=2)
     except Exception as e:
@@ -222,9 +200,6 @@ async def run_nonquery_params(sql_query, params: Tuple[Any, ...] = ()):
         cursor = conn.cursor()
         cursor.execute(sql_query, params)
         conn.commit()
-
-        # logging.info("FABRIC-SQL-QUERY: %s" % sql_query)
-
         return True
     except Exception as e:
         logging.error("Error executing SQL query: %s", e)
@@ -252,24 +227,16 @@ async def run_query_params(sql_query, params: Tuple[Any, ...] = ()):
     try:
         cursor = conn.cursor()
         cursor.execute(sql_query, params)
-
-        # Extract column names
         columns = [desc[0] for desc in cursor.description]
-
-        # Fetch and convert rows to list of dicts
         result = []
         for row in cursor.fetchall():
             row_dict = {}
             for col_name, value in zip(columns, row):
-                # Convert datetime/date to ISO format for JSON
                 if isinstance(value, (datetime, date)):
                     row_dict[col_name] = value.isoformat()
                 else:
                     row_dict[col_name] = value
             result.append(row_dict)
-
-        # logging.info("FABRIC-SQLDBService-Param-QUERY: %s" % sql_query)
-        # logging.info("FABRIC-SQLDBService-Param-RESULT: %s" % result)
 
         return result
     except Exception as e:
@@ -406,9 +373,7 @@ async def delete_conversation(user_id: str, conversation_id: str) -> bool:
             return False
 
         query = "SELECT userId, conversation_id FROM hst_conversations where conversation_id = ?"
-        conversation = await run_query_params(query, (conversation_id,))
-        # logger.info(f"FABRIC-DELETED-Retrieved conversation: {conversation}")
-        # Check if the conversation exists
+        conversation = await run_query_params(query, (conversation_id,))        
         if not conversation or len(conversation) == 0:
             logger.warning("Conversation %s not found.", conversation_id)
             return False
@@ -428,7 +393,6 @@ async def delete_conversation(user_id: str, conversation_id: str) -> bool:
         query_m = "DELETE FROM hst_conversations where userId = ?  and conversation_id = ?"
         await run_nonquery_params(query_m, params)
 
-        logger.info("Successfully deleted conversation %s.", conversation_id)
         return True
 
     except Exception as e:
@@ -464,7 +428,6 @@ async def delete_all_conversations(user_id: str) -> bool:
             logger.error("Failed to delete all conversations for user %s", user_id)
             return False
 
-        logger.info("Successfully deleted all conversations for user %s.", user_id)
         return True
 
     except Exception as e:
@@ -485,7 +448,6 @@ async def rename_conversation(user_id: str, conversation_id, title) -> bool:
         bool: True if the conversation was successfully renamed, False otherwise.
     """
     try:
-        logger.info("Renaming conversation %s for user %s to '%s'", conversation_id, user_id, title)
         if not conversation_id:
             raise ValueError("No conversation_id found")
 
@@ -515,7 +477,6 @@ async def rename_conversation(user_id: str, conversation_id, title) -> bool:
         query_t = "UPDATE hst_conversations SET title = ? WHERE userId = ?  and conversation_id = ?"
         await run_nonquery_params(query_t, (title, user_id, conversation_id))
 
-        logger.info("Successfully updated title of conversation %s to '%s'.", conversation_id, title)
         return True
     except Exception as e:
         logger.exception("Error updating title of conversation %s to '%s': %s", conversation_id, title, e)
@@ -606,9 +567,7 @@ async def create_conversation(user_id, title="", conversation_id=None):
     Raises:
         Exception: If an error occurs during conversation creation.
     """
-    try:
-        # logger.info(f"FABRIC-create_conversation: user {user_id} with title '{title}' and conversation_id '{conversation_id}'")
-
+    try:        
         if not user_id:
             logger.warning("No User ID found, cannot create conversation.")
             return None
@@ -621,15 +580,12 @@ async def create_conversation(user_id, title="", conversation_id=None):
         query = "SELECT * FROM hst_conversations where conversation_id = ?"
         existing_conversation = await run_query_params(query, (conversation_id,))
         if existing_conversation and len(existing_conversation) > 0:
-            logger.info("Conversation with ID %s already exists.", conversation_id)
             return existing_conversation
 
-        # utc_now = datetime.now(datetime.timezone.utc).isoformat()
         utc_now = datetime.utcnow().isoformat()
         query = "INSERT INTO hst_conversations (userId, conversation_id, title, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)"
         params = (user_id, conversation_id, title, utc_now, utc_now)
         resp = await run_nonquery_params(query, params)
-        # logger.info("Created conversation with ID: %s", conversation_id)
         return resp
     except Exception:
         logger.exception("Error in create_conversation")
@@ -653,7 +609,6 @@ async def create_message(uuid, conversation_id, user_id, input_message: dict):
         Exception: If an error occurs during message creation.
     """
     try:
-        # logger.info(f"FABRIC-create_message: user {user_id} with conversation_id '{conversation_id}' and input_message: {input_message}")
         if not user_id:
             logger.warning("No User ID found, cannot create message.")
             return None
@@ -667,20 +622,9 @@ async def create_message(uuid, conversation_id, user_id, input_message: dict):
         exist_conversation = await run_query_params(query, (conversation_id,))
         if not exist_conversation or len(exist_conversation) == 0:
             logger.error("Conversation not found for ID: %s", conversation_id)
-            return None
+            return None        
 
-        # query = f"SELECT * FROM hst_conversations where conversation_id = ?"
-        # conversation = await run_query_and_return_json_params(query, (conversation_id,))
-        # if not conversation:
-        #     logger.error(f"Conversation not found for ID: {conversation_id}")
-        #     return None
-
-        # logger.info(f"FABRIC-UPDATED-create_message-conversation_id: {conversation_id}")
-
-        utc_now = datetime.utcnow().isoformat()
-        # if self.enable_message_feedback:
-        #     message["feedback"] = ""
-        # todo
+        utc_now = datetime.utcnow().isoformat()       
         feedback = ""
 
         # Extract citations from input_message
@@ -709,8 +653,7 @@ async def create_message(uuid, conversation_id, user_id, input_message: dict):
         params = (user_id, conversation_id, input_message["role"], input_message["id"],
                   input_message["content"], citations_json, feedback, utc_now, utc_now)
         resp = await run_nonquery_params(query, params)
-        # logger.info("FABRIC-Created conversation status: %s, conversation_id: %s, message ID: %s, Content: %s",
-        #             resp, conversation_id, input_message["id"], input_message["content"])
+        
         if resp:
             # Update the conversation's updatedAt timestamp
             query_t = "UPDATE hst_conversations SET updatedAt = ? WHERE conversation_id = ?"
@@ -751,16 +694,10 @@ async def update_conversation(user_id: str, request_json: dict):
         query = "SELECT * FROM hst_conversations where conversation_id = ?"
         conversation = await run_query_params(query, (conversation_id,))
 
-        # logger.info(f"FABRIC-UPDATED-Retrieved conversation: {conversation}")
-
         if not conversation or len(conversation) == 0:
             title = await generate_title(messages)
             await create_conversation(user_id=user_id, conversation_id=conversation_id, title=title)
-            # logger.info(f"FABRIC-UPDATED-created conversation: {conversationCreated}")
-
-        # Format the incoming message object in the "chat/completions" messages format then write it to the
-        # conversation history
-        # logger.info(f"FABRIC-UPDATED-conversation_id before creating message: {conversation_id}")
+            
         messages = request_json["messages"]
         if len(messages) > 0 and messages[0]["role"] == "user":
             user_message = next(
@@ -817,7 +754,6 @@ async def update_conversation(user_id: str, request_json: dict):
         queryReturn = "SELECT * FROM hst_conversations where conversation_id = ?"
         conversationUpdated = await run_query_params(queryReturn, (conversation_id,))
 
-        logger.info("FABRIC-UPDATED-conversationUpdated: %s", conversationUpdated)
         if conversationUpdated and len(conversationUpdated) > 0:
             return {
                 "id": conversationUpdated[0].get("conversation_id"),
@@ -863,7 +799,6 @@ async def list_conversations(
 
         # Get conversations
         conversations = await get_conversations(user_id, offset=offset, limit=limit)
-        # logging.info("FABRIC-API-list-Conv: %s" % conversations)
         if user_id:
             track_event_if_configured("ConversationsListed", {
                 "user_id": user_id,
@@ -915,9 +850,7 @@ async def get_conversation_messages_endpoint(request: Request, id: str = Query(.
             raise HTTPException(status_code=400, detail="conversation_id is required")
 
         # Get conversation message details
-        conversationMessages = await get_conversation_messages(user_id, conversation_id)
-        logger.info("Historyfab read-API-conversationMessages: conversationMessages: %s", conversationMessages)
-        # if not conversationMessages:
+        conversationMessages = await get_conversation_messages(user_id, conversation_id)        
         if not conversationMessages or len(conversationMessages) == 0:
             if user_id:
                 track_event_if_configured("ReadConversationNotFound", {

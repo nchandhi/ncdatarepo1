@@ -281,7 +281,6 @@ module backend_docker 'deploy_backend_docker.bicep' = {
 
       FABRIC_SQL_DATABASE: ''
       FABRIC_SQL_SERVER: ''
-      FABRIC_SQL_CONNECTIONSTRING: ''
     }
   }
   scope: resourceGroup(resourceGroup().name)
@@ -349,4 +348,3 @@ output AGENT_ID_SQL string = createAgent.outputs.sqlAgentId
 output AGENT_ID_CHART string = createAgent.outputs.chartAgentId
 output FABRIC_SQL_DATABASE string = ''
 output FABRIC_SQL_SERVER string = ''
-output FABRIC_SQL_CONNECTIONSTRING string = ''
