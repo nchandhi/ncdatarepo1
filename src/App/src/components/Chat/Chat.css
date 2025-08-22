@@ -1,10 +1,10 @@
 :root {
-  --msg-block-font: 0.875rem;
+  --msg-block-font: 0.9375rem;
   --answer-disclaimer-font: 0.75rem;
   --create-conv-btn-min-width: 2rem;
   --send-button-font-size: 1.5rem;
   --btn-create-conv-svg: 2rem;
-  --text-area-font: 0.875rem;
+  --text-area-font: 0.9375rem;
 }
 
 .text-area-container {
@@ -66,7 +66,7 @@
   background-color: #ebefff;
   color: #242424;
   font-family: var(--Font-family-Base, "Segoe UI");
-  font-size: var(--msg-block-font, 14px);
+  font-size: var(--msg-block-font, 15px);
   font-style: normal;
   font-weight: 400;
   line-height: var(--Line-height-300, 20px);
@@ -81,7 +81,7 @@
   max-width: 70%;
   align-self: flex-start;
   font-family: var(--Font-family-Base, "Segoe UI");
-  font-size: var(--msg-block-font, 14px);
+  font-size: var(--msg-block-font, 15px);
   font-style: normal;
   font-weight: 400;
   padding: 8px 16px;
