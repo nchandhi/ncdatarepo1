@@ -16,7 +16,6 @@ from fastapi.responses import JSONResponse
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
 
-from chat import adjust_processed_data_dates
 from auth.auth_utils import get_authenticated_user_details
 
 router = APIRouter()
@@ -853,6 +852,7 @@ async def list_conversations(
         HTTPException: If authentication fails or validation errors occur.
     """
     try:
+        from chat import adjust_processed_data_dates
         await adjust_processed_data_dates()
 
         authenticated_user = get_authenticated_user_details(

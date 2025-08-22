@@ -32,7 +32,7 @@ async def lifespan(fastapi_app: FastAPI):
     On startup, initializes the Azure AI agent using the configuration and attaches it to the app state.
     On shutdown, deletes the agent instance and performs any necessary cleanup.
     """
-    from chat_with_data_plugin import ChatWithDataPlugin
+    from chat import ChatWithDataPlugin
 
     ai_agent_settings = AzureAIAgentSettings(endpoint=os.getenv("AZURE_AI_AGENT_ENDPOINT"))
     client =  AzureAIAgent.create_client(
