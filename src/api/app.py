@@ -13,11 +13,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from dotenv import load_dotenv
 import uvicorn
+import os
 
-from agent_factory import AgentFactory, AgentType
 from chat import router as chat_router
 from history import router as history_router
 from history_sql import router as history_sql_router
+from semantic_kernel.agents import AzureAIAgent, AzureAIAgentSettings
+from azure.identity.aio import DefaultAzureCredential
 
 load_dotenv()
 
@@ -30,16 +32,24 @@ async def lifespan(fastapi_app: FastAPI):
     On startup, initializes the Azure AI agent using the configuration and attaches it to the app state.
     On shutdown, deletes the agent instance and performs any necessary cleanup.
     """
-    fastapi_app.state.agent = await AgentFactory.get_agent(AgentType.CONVERSATION)
-    fastapi_app.state.sql_agent = await AgentFactory.get_agent(AgentType.SQL)
-    fastapi_app.state.chart_agent = await AgentFactory.get_agent(AgentType.CHART)
-    # fastapi_app.state.fabric_agent = await AgentFactory.get_agent(AgentType.FABRIC)
+    from chat import ChatWithDataPlugin
+
+    ai_agent_settings = AzureAIAgentSettings(endpoint=os.getenv("AZURE_AI_AGENT_ENDPOINT"))
+    client =  AzureAIAgent.create_client(
+        credential=DefaultAzureCredential(),
+        endpoint=ai_agent_settings.endpoint,
+    )
+    agent = await client.agents.get_agent(
+        agent_id=os.getenv("AGENT_ID_ORCHESTRATOR")
+    )
+    # print(f"Agent retrieved: {agent}")
+    fastapi_app.state.orchestrator_agent = AzureAIAgent(
+        client=client,
+        definition=agent,
+        plugins=[ChatWithDataPlugin()]
+    )
     yield
-    await AgentFactory.delete_all_agents()
-    fastapi_app.state.sql_agent = None
-    fastapi_app.state.agent = None
-    fastapi_app.state.chart_agent = None
-    # fastapi_app.state.fabric_agent = None
+    fastapi_app.state.orchestrator_agent = None
 
 
 def build_app() -> FastAPI:

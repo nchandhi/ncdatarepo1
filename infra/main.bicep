@@ -211,6 +211,21 @@ module createIndex 'deploy_index_scripts.bicep' = {
   dependsOn:[sqlDBModule,uploadFiles]
 }
 
+//========== Deployment script to create Agent ========== //
+module createAgent 'run_agent_scripts.bicep' = {
+  name : 'run_agent_scripts'
+  params:{
+    solutionLocation: solutionLocation
+    managedIdentityResourceId:managedIdentityModule.outputs.managedIdentityOutput.id
+    managedIdentityClientId:managedIdentityModule.outputs.managedIdentityOutput.clientId
+    baseUrl:baseUrl
+    keyVaultName:aifoundry.outputs.keyvaultName
+    projectEndpoint: aifoundry.outputs.projectEndpoint
+    solutionName: solutionPrefix
+    gptModelName: gptModelName
+  }
+}
+
 module hostingplan 'deploy_app_service_plan.bicep' = {
   name: 'deploy_app_service_plan'
   params: {
@@ -258,6 +273,14 @@ module backend_docker 'deploy_backend_docker.bicep' = {
       APPLICATIONINSIGHTS_CONNECTION_STRING: aifoundry.outputs.applicationInsightsConnectionString
       DUMMY_TEST: 'True'
       SOLUTION_NAME: solutionPrefix
+      APP_ENV: 'Prod'
+
+      AGENT_ID_ORCHESTRATOR: createAgent.outputs.orchestratorAgentId
+      AGENT_ID_SQL: createAgent.outputs.sqlAgentId
+      AGENT_ID_CHART: createAgent.outputs.chartAgentId
+
+      FABRIC_SQL_DATABASE: ''
+      FABRIC_SQL_SERVER: ''
     }
   }
   scope: resourceGroup(resourceGroup().name)
@@ -320,3 +343,8 @@ output AZURE_ENV_IMAGETAG string = imageTag
 output API_APP_URL string = backend_docker.outputs.appUrl
 output WEB_APP_URL string = frontend_docker.outputs.appUrl
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = aifoundry.outputs.applicationInsightsConnectionString
+output AGENT_ID_ORCHESTRATOR string = createAgent.outputs.orchestratorAgentId
+output AGENT_ID_SQL string = createAgent.outputs.sqlAgentId
+output AGENT_ID_CHART string = createAgent.outputs.chartAgentId
+output FABRIC_SQL_DATABASE string = ''
+output FABRIC_SQL_SERVER string = ''
