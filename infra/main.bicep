@@ -264,7 +264,7 @@ module backend_docker 'deploy_backend_docker.bicep' = {
       AZURE_COSMOSDB_ENABLE_FEEDBACK: '' //'True'
       SQLDB_DATABASE: '' //sqlDBModule.outputs.sqlDbName
       SQLDB_SERVER: '' //sqlDBModule.outputs.sqlServerName
-      SQLDB_USER_MID: '' //managedIdentityModule.outputs.managedIdentityBackendAppOutput.clientId
+      SQLDB_USER_MID: managedIdentityModule.outputs.managedIdentityBackendAppOutput.clientId
 
       AZURE_AI_SEARCH_ENDPOINT: '' //aifoundry.outputs.aiSearchTarget
       AZURE_AI_SEARCH_INDEX: '' //'call_transcripts_index'
