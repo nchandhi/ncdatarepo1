@@ -6,7 +6,7 @@ from typing import Optional
 
 from azure.cosmos import exceptions
 from azure.cosmos.aio import CosmosClient
-from azure.identity.aio import DefaultAzureCredential, get_bearer_token_provider
+from azure.identity.aio import get_bearer_token_provider
 from azure.monitor.events.extension import track_event
 from azure.monitor.opentelemetry import configure_azure_monitor
 from fastapi import APIRouter, HTTPException, Query, Request, status
@@ -17,6 +17,7 @@ from opentelemetry.trace import Status, StatusCode
 
 from chat import adjust_processed_data_dates
 from auth.auth_utils import get_authenticated_user_details
+from auth.azure_credential_utils import get_azure_credential_async
 
 router = APIRouter()
 
@@ -294,7 +295,7 @@ def init_cosmosdb_client():
 
         return CosmosConversationClient(
             cosmosdb_endpoint=cosmos_endpoint,
-            credential=DefaultAzureCredential(),
+            credential=get_azure_credential_async(),
             database_name=AZURE_COSMOSDB_DATABASE,
             container_name=AZURE_COSMOSDB_CONVERSATIONS_CONTAINER,
             enable_message_feedback=AZURE_COSMOSDB_ENABLE_FEEDBACK,
@@ -318,7 +319,7 @@ def init_openai_client():
 
         logger.debug("Using Azure AD authentication for OpenAI")
         ad_token_provider = get_bearer_token_provider(
-            DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
+            get_azure_credential_async(), "https://cognitiveservices.azure.com/.default")
 
         if not AZURE_OPENAI_DEPLOYMENT_MODEL:
             raise ValueError("AZURE_OPENAI_MODEL is required")
