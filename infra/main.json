@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "511067251311139957"
+      "templateHash": "7309355541532762527"
     }
   },
   "parameters": {
@@ -1912,7 +1912,7 @@
               "AZURE_COSMOSDB_ENABLE_FEEDBACK": "",
               "SQLDB_DATABASE": "",
               "SQLDB_SERVER": "",
-              "SQLDB_USER_MID": "",
+              "SQLDB_USER_MID": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, resourceGroup().name), 'Microsoft.Resources/deployments', 'deploy_managed_identity'), '2022-09-01').outputs.managedIdentityBackendAppOutput.value.clientId]",
               "AZURE_AI_SEARCH_ENDPOINT": "",
               "AZURE_AI_SEARCH_INDEX": "",
               "AZURE_AI_SEARCH_CONNECTION_NAME": "",
