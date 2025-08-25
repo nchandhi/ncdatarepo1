@@ -48,24 +48,24 @@ module appService 'deploy_app_service.bicep' = {
   }
 }
 
-resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2022-08-15' existing = {
-  name: appSettings.AZURE_COSMOSDB_ACCOUNT
-}
+// resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2022-08-15' existing = {
+//   name: appSettings.AZURE_COSMOSDB_ACCOUNT
+// }
 
-resource contributorRoleDefinition 'Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinitions@2024-05-15' existing = {
-  parent: cosmos
-  name: '00000000-0000-0000-0000-000000000002'
-}
+// resource contributorRoleDefinition 'Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinitions@2024-05-15' existing = {
+//   parent: cosmos
+//   name: '00000000-0000-0000-0000-000000000002'
+// }
 
-resource role 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2022-05-15' = {
-  parent: cosmos
-  name: guid(contributorRoleDefinition.id, cosmos.id)
-  properties: {
-    principalId: appService.outputs.identityPrincipalId
-    roleDefinitionId: contributorRoleDefinition.id
-    scope: cosmos.id
-  }
-}
+// resource role 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2022-05-15' = {
+//   parent: cosmos
+//   name: guid(contributorRoleDefinition.id, cosmos.id)
+//   properties: {
+//     principalId: appService.outputs.identityPrincipalId
+//     roleDefinitionId: contributorRoleDefinition.id
+//     scope: cosmos.id
+//   }
+// }
 
 resource aiServices 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' existing = {
   name: aiServicesName
@@ -90,23 +90,23 @@ resource keyVaultSecretsUserAssignment 'Microsoft.Authorization/roleAssignments@
   }
 }
 
-resource aiSearch 'Microsoft.Search/searchServices@2024-06-01-preview' existing = {
-  name: aiSearchName
-}
+// resource aiSearch 'Microsoft.Search/searchServices@2024-06-01-preview' existing = {
+//   name: aiSearchName
+// }
 
-resource searchIndexDataReader 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
-  name: '1407120a-92aa-4202-b7e9-c0e197c71c8f'
-}
+// resource searchIndexDataReader 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
+//   name: '1407120a-92aa-4202-b7e9-c0e197c71c8f'
+// }
 
-resource searchIndexDataReaderAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(appService.name, aiSearch.name, searchIndexDataReader.id)
-  scope: aiSearch
-  properties: {
-    roleDefinitionId: searchIndexDataReader.id
-    principalId: appService.outputs.identityPrincipalId
-    principalType: 'ServicePrincipal'
-  }
-}
+// resource searchIndexDataReaderAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+//   name: guid(appService.name, aiSearch.name, searchIndexDataReader.id)
+//   scope: aiSearch
+//   properties: {
+//     roleDefinitionId: searchIndexDataReader.id
+//     principalId: appService.outputs.identityPrincipalId
+//     principalType: 'ServicePrincipal'
+//   }
+// }
 
 resource aiUser 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
   name: '53ca6127-db72-4b80-b1b0-d745d6d5456d'
