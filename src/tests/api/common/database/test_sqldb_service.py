@@ -18,8 +18,8 @@ def mock_db_conn():
 
 @pytest.fixture
 def token_fixture():
-    """Fixture to mock DefaultAzureCredential with async context support."""
-    with patch("common.database.sqldb_service.DefaultAzureCredential") as mock_cred:
+    """Fixture to mock get_azure_credential_async with async context support."""
+    with patch("common.database.sqldb_service.get_azure_credential_async") as mock_cred:
         mock_cred_instance = MagicMock()
 
         async def mock_get_token(*args, **kwargs):
@@ -53,7 +53,7 @@ class TestSqlDbService:
     async def test_get_db_connection_fallback_to_sql_auth(self):
         """Test fallback to SQL auth when token auth fails."""
         with patch("pyodbc.connect") as mock_connect, \
-             patch("common.database.sqldb_service.DefaultAzureCredential") as mock_cred:
+             patch("common.database.sqldb_service.get_azure_credential_async") as mock_cred:
 
             mock_token_instance = MagicMock()
 

@@ -1,6 +1,6 @@
 import json
 from azure.ai.projects import AIProjectClient
-from azure.identity import ManagedIdentityCredential, DefaultAzureCredential
+from scripts.azure_credential_utils import get_azure_credential
 
 KEY_VAULT_NAME = 'kv_to-be-replaced'
 MANAGED_IDENTITY_CLIENT_ID = 'mici_to-be-replaced'
@@ -10,7 +10,7 @@ gptModelName = 'gpt_model_name_to-be-replaced'
 
 project_client = AIProjectClient(
     endpoint= ai_project_endpoint,
-    credential=ManagedIdentityCredential(client_id=MANAGED_IDENTITY_CLIENT_ID),
+    credential=get_azure_credential(client_id=MANAGED_IDENTITY_CLIENT_ID),
 )
 
 orchestrator_agent_instructions = '''You are a helpful assistant.
