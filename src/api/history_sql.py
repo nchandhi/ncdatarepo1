@@ -77,11 +77,12 @@ async def get_fabric_db_connection():
     Returns:
         Connection: Database connection object, or None if connection fails.
     """
-    # app_env = os.getenv("APP_ENV", "prod").lower()
-    # database = os.getenv("FABRIC_SQL_DATABASE")
-    # server = os.getenv("FABRIC_SQL_SERVER")
-    # driver = "{ODBC Driver 17 for SQL Server}"
-    api_uid = os.getenv("API_UID", "")
+    app_env = os.getenv("APP_ENV", "prod").lower()
+    database = os.getenv("FABRIC_SQL_DATABASE")
+    server = os.getenv("FABRIC_SQL_SERVER")
+    driver = "{ODBC Driver 17 for SQL Server}"
+    # api_uid = os.getenv("API_UID", "")
+    fabric_sql_connection_string = os.getenv("FABRIC_SQL_CONNECTION_STRING", "")
 
     try:
         conn = None
@@ -99,7 +100,8 @@ async def get_fabric_db_connection():
                 connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};"
                 conn = pyodbc.connect(connection_string, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct})
         else:
-            connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};UID={api_uid};Authentication=ActiveDirectoryMSI;"
+            # connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};UID={api_uid};Authentication=ActiveDirectoryMSI;"
+            connection_string = fabric_sql_connection_string
             conn = pyodbc.connect(connection_string)
         
         return conn

@@ -62,7 +62,7 @@ param embeddingModel string = 'text-embedding-ada-002'
 @description('Capacity of the Embedding Model deployment')
 param embeddingDeploymentCapacity int = 80
 
-param imageTag string = 'latest'
+param imageTag string = 'latest_bicep'
 
 param AZURE_LOCATION string=''
 var solutionLocation = empty(AZURE_LOCATION) ? resourceGroup().location : AZURE_LOCATION
@@ -283,6 +283,7 @@ module backend_docker 'deploy_backend_docker.bicep' = {
 
       FABRIC_SQL_DATABASE: ''
       FABRIC_SQL_SERVER: ''
+      FABRIC_SQL_CONNECTION_STRING: ''
     }
   }
   scope: resourceGroup(resourceGroup().name)
@@ -351,3 +352,4 @@ output AGENT_ID_SQL string = createAgent.outputs.sqlAgentId
 output AGENT_ID_CHART string = createAgent.outputs.chartAgentId
 output FABRIC_SQL_DATABASE string = ''
 output FABRIC_SQL_SERVER string = ''
+output FABRIC_SQL_CONNECTION_STRING string = ''
