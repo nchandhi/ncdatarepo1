@@ -34,5 +34,16 @@ agentIds=$(python 01_create_agents.py)
 
 echo "agent creation completed."
 
+output=$(jq -n \
+    --arg orchestratorAgentId "$(echo "$agentIds" | jq -r .orchestratorAgentId)" \
+    --arg sqlAgentId "$(echo "$agentIds" | jq -r .sqlAgentId)" \
+    --arg chartAgentId "$(echo "$agentIds" | jq -r .chartAgentId)" \
+    '{
+        orchestratorAgentId: $orchestratorAgentId,
+        sqlAgentId: $sqlAgentId,
+        chartAgentId: $chartAgentId
+    }'
+)
+
 # write outputs for Bicep
-printf '%s' "$agentIds" > "$AZ_SCRIPTS_OUTPUT_PATH"
+printf '%s' "$output" > "$AZ_SCRIPTS_OUTPUT_PATH"
