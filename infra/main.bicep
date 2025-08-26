@@ -12,15 +12,16 @@ param existingLogAnalyticsWorkspaceId string = ''
 @description('Use this parameter to use an existing AI project resource ID')
 param azureExistingAIProjectResourceId string = ''
 
-@minLength(1)
-@description('Location for the Content Understanding service deployment:')
-@allowed(['swedencentral', 'australiaeast'])
-@metadata({
-  azd: {
-    type: 'location'
-  }
-})
-param contentUnderstandingLocation string = 'swedencentral'
+// @minLength(1)
+// @description('Location for the Content Understanding service deployment:')
+// @allowed(['swedencentral', 'australiaeast'])
+// @metadata({
+//   azd: {
+//     type: 'location'
+//   }
+// })
+// param contentUnderstandingLocation string = 'swedencentral'
+var contentUnderstandingLocation = ''
 
 @minLength(1)
 @description('Secondary location for databases creation(example:eastus2):')
@@ -142,74 +143,74 @@ module aifoundry 'deploy_ai_foundry.bicep' = {
 }
 
 
-// ========== Storage account module ========== //
-module storageAccount 'deploy_storage_account.bicep' = {
-  name: 'deploy_storage_account'
-  params: {
-    saName: '${abbrs.storage.storageAccount}${solutionPrefix}'
-    solutionLocation: solutionLocation
-    keyVaultName: kvault.outputs.keyvaultName
-    managedIdentityObjectId: managedIdentityModule.outputs.managedIdentityOutput.objectId
-  }
-  scope: resourceGroup(resourceGroup().name)
-}
+// // ========== Storage account module ========== //
+// module storageAccount 'deploy_storage_account.bicep' = {
+//   name: 'deploy_storage_account'
+//   params: {
+//     saName: '${abbrs.storage.storageAccount}${solutionPrefix}'
+//     solutionLocation: solutionLocation
+//     keyVaultName: kvault.outputs.keyvaultName
+//     managedIdentityObjectId: managedIdentityModule.outputs.managedIdentityOutput.objectId
+//   }
+//   scope: resourceGroup(resourceGroup().name)
+// }
 
-// ========== Cosmos DB module ========== //
-module cosmosDBModule 'deploy_cosmos_db.bicep' = {
-  name: 'deploy_cosmos_db'
-  params: {
-    accountName: '${abbrs.databases.cosmosDBDatabase}${solutionPrefix}'
-    solutionLocation: secondaryLocation
-    keyVaultName: kvault.outputs.keyvaultName
-  }
-  scope: resourceGroup(resourceGroup().name)
-}
+// // ========== Cosmos DB module ========== //
+// module cosmosDBModule 'deploy_cosmos_db.bicep' = {
+//   name: 'deploy_cosmos_db'
+//   params: {
+//     accountName: '${abbrs.databases.cosmosDBDatabase}${solutionPrefix}'
+//     solutionLocation: secondaryLocation
+//     keyVaultName: kvault.outputs.keyvaultName
+//   }
+//   scope: resourceGroup(resourceGroup().name)
+// }
 
-//========== SQL DB module ========== //
-module sqlDBModule 'deploy_sql_db.bicep' = {
-  name: 'deploy_sql_db'
-  params: {
-    serverName: '${abbrs.databases.sqlDatabaseServer}${solutionPrefix}'
-    sqlDBName: '${abbrs.databases.sqlDatabase}${solutionPrefix}'
-    solutionLocation: secondaryLocation
-    keyVaultName: kvault.outputs.keyvaultName
-    managedIdentityName: managedIdentityModule.outputs.managedIdentityOutput.name
-    sqlUsers: [
-      {
-        principalId: managedIdentityModule.outputs.managedIdentityBackendAppOutput.clientId
-        principalName: managedIdentityModule.outputs.managedIdentityBackendAppOutput.name
-        databaseRoles: ['db_datareader', 'db_datawriter']
-      }
-    ]
-  }
-  scope: resourceGroup(resourceGroup().name)
-}
+// //========== SQL DB module ========== //
+// module sqlDBModule 'deploy_sql_db.bicep' = {
+//   name: 'deploy_sql_db'
+//   params: {
+//     serverName: '${abbrs.databases.sqlDatabaseServer}${solutionPrefix}'
+//     sqlDBName: '${abbrs.databases.sqlDatabase}${solutionPrefix}'
+//     solutionLocation: secondaryLocation
+//     keyVaultName: kvault.outputs.keyvaultName
+//     managedIdentityName: managedIdentityModule.outputs.managedIdentityOutput.name
+//     sqlUsers: [
+//       {
+//         principalId: managedIdentityModule.outputs.managedIdentityBackendAppOutput.clientId
+//         principalName: managedIdentityModule.outputs.managedIdentityBackendAppOutput.name
+//         databaseRoles: ['db_datareader', 'db_datawriter']
+//       }
+//     ]
+//   }
+//   scope: resourceGroup(resourceGroup().name)
+// }
 
-//========== Deployment script to upload sample data ========== //
-module uploadFiles 'deploy_upload_files_script.bicep' = {
-  name : 'deploy_upload_files_script'
-  params:{
-    solutionLocation: secondaryLocation
-    baseUrl: baseUrl
-    storageAccountName: storageAccount.outputs.storageName
-    containerName: storageAccount.outputs.storageContainer
-    managedIdentityResourceId:managedIdentityModule.outputs.managedIdentityOutput.id
-    managedIdentityClientId:managedIdentityModule.outputs.managedIdentityOutput.clientId
-  }
-}
+// //========== Deployment script to upload sample data ========== //
+// module uploadFiles 'deploy_upload_files_script.bicep' = {
+//   name : 'deploy_upload_files_script'
+//   params:{
+//     solutionLocation: secondaryLocation
+//     baseUrl: baseUrl
+//     storageAccountName: storageAccount.outputs.storageName
+//     containerName: storageAccount.outputs.storageContainer
+//     managedIdentityResourceId:managedIdentityModule.outputs.managedIdentityOutput.id
+//     managedIdentityClientId:managedIdentityModule.outputs.managedIdentityOutput.clientId
+//   }
+// }
 
-//========== Deployment script to process and index data ========== //
-module createIndex 'deploy_index_scripts.bicep' = {
-  name : 'deploy_index_scripts'
-  params:{
-    solutionLocation: secondaryLocation
-    managedIdentityResourceId:managedIdentityModule.outputs.managedIdentityOutput.id
-    managedIdentityClientId:managedIdentityModule.outputs.managedIdentityOutput.clientId
-    baseUrl:baseUrl
-    keyVaultName:aifoundry.outputs.keyvaultName
-  }
-  dependsOn:[sqlDBModule,uploadFiles]
-}
+// //========== Deployment script to process and index data ========== //
+// module createIndex 'deploy_index_scripts.bicep' = {
+//   name : 'deploy_index_scripts'
+//   params:{
+//     solutionLocation: secondaryLocation
+//     managedIdentityResourceId:managedIdentityModule.outputs.managedIdentityOutput.id
+//     managedIdentityClientId:managedIdentityModule.outputs.managedIdentityOutput.clientId
+//     baseUrl:baseUrl
+//     keyVaultName:aifoundry.outputs.keyvaultName
+//   }
+//   dependsOn:[sqlDBModule,uploadFiles]
+// }
 
 //========== Deployment script to create Agent ========== //
 module createAgent 'run_agent_scripts.bicep' = {
@@ -257,17 +258,18 @@ module backend_docker 'deploy_backend_docker.bicep' = {
       AZURE_AI_AGENT_API_VERSION: azureAiAgentApiVersion
       AZURE_AI_AGENT_MODEL_DEPLOYMENT_NAME: gptModelName
       USE_CHAT_HISTORY_ENABLED: 'True'
-      AZURE_COSMOSDB_ACCOUNT: cosmosDBModule.outputs.cosmosAccountName
-      AZURE_COSMOSDB_CONVERSATIONS_CONTAINER: cosmosDBModule.outputs.cosmosContainerName
-      AZURE_COSMOSDB_DATABASE: cosmosDBModule.outputs.cosmosDatabaseName
-      AZURE_COSMOSDB_ENABLE_FEEDBACK: 'True'
-      SQLDB_DATABASE: sqlDBModule.outputs.sqlDbName
-      SQLDB_SERVER: sqlDBModule.outputs.sqlServerName
+      AZURE_COSMOSDB_ACCOUNT: '' //cosmosDBModule.outputs.cosmosAccountName
+      AZURE_COSMOSDB_CONVERSATIONS_CONTAINER: '' //cosmosDBModule.outputs.cosmosContainerName
+      AZURE_COSMOSDB_DATABASE: '' //cosmosDBModule.outputs.cosmosDatabaseName
+      AZURE_COSMOSDB_ENABLE_FEEDBACK: '' //'True'
+      SQLDB_DATABASE: '' //sqlDBModule.outputs.sqlDbName
+      SQLDB_SERVER: '' //sqlDBModule.outputs.sqlServerName
       SQLDB_USER_MID: managedIdentityModule.outputs.managedIdentityBackendAppOutput.clientId
 
-      AZURE_AI_SEARCH_ENDPOINT: aifoundry.outputs.aiSearchTarget
-      AZURE_AI_SEARCH_INDEX: 'call_transcripts_index'
-      AZURE_AI_SEARCH_CONNECTION_NAME: aifoundry.outputs.aiSearchConnectionName
+      AZURE_AI_SEARCH_ENDPOINT: '' //aifoundry.outputs.aiSearchTarget
+      AZURE_AI_SEARCH_INDEX: '' //'call_transcripts_index'
+      AZURE_AI_SEARCH_CONNECTION_NAME: '' //aifoundry.outputs.aiSearchConnectionName
+
       USE_AI_PROJECT_CLIENT: 'True'
       DISPLAY_CHART_DEFAULT: 'False'
       APPLICATIONINSIGHTS_CONNECTION_STRING: aifoundry.outputs.applicationInsightsConnectionString
@@ -312,14 +314,14 @@ output APPINSIGHTS_INSTRUMENTATIONKEY string = backend_docker.outputs.appInsight
 output AZURE_AI_PROJECT_CONN_STRING string = aifoundry.outputs.projectEndpoint
 output AZURE_AI_AGENT_API_VERSION string = azureAiAgentApiVersion
 output AZURE_AI_PROJECT_NAME string = aifoundry.outputs.aiProjectName
-output AZURE_AI_SEARCH_API_KEY string = ''
-output AZURE_AI_SEARCH_ENDPOINT string = aifoundry.outputs.aiSearchTarget
-output AZURE_AI_SEARCH_INDEX string = 'call_transcripts_index'
-output AZURE_AI_SEARCH_CONNECTION_NAME string = aifoundry.outputs.aiSearchConnectionName
-output AZURE_COSMOSDB_ACCOUNT string = cosmosDBModule.outputs.cosmosAccountName
-output AZURE_COSMOSDB_CONVERSATIONS_CONTAINER string = 'conversations'
-output AZURE_COSMOSDB_DATABASE string = 'db_conversation_history'
-output AZURE_COSMOSDB_ENABLE_FEEDBACK string = 'True'
+// output AZURE_AI_SEARCH_API_KEY string = ''
+// output AZURE_AI_SEARCH_ENDPOINT string = aifoundry.outputs.aiSearchTarget
+// output AZURE_AI_SEARCH_INDEX string = 'call_transcripts_index'
+// output AZURE_AI_SEARCH_CONNECTION_NAME string = aifoundry.outputs.aiSearchConnectionName
+// output AZURE_COSMOSDB_ACCOUNT string = cosmosDBModule.outputs.cosmosAccountName
+// output AZURE_COSMOSDB_CONVERSATIONS_CONTAINER string = 'conversations'
+// output AZURE_COSMOSDB_DATABASE string = 'db_conversation_history'
+// output AZURE_COSMOSDB_ENABLE_FEEDBACK string = 'True'
 output AZURE_OPENAI_DEPLOYMENT_MODEL string = gptModelName
 output AZURE_OPENAI_DEPLOYMENT_MODEL_CAPACITY int = gptDeploymentCapacity
 output AZURE_OPENAI_ENDPOINT string = aifoundry.outputs.aiServicesTarget
@@ -329,9 +331,9 @@ output AZURE_OPENAI_EMBEDDING_MODEL_CAPACITY int = embeddingDeploymentCapacity
 output AZURE_OPENAI_API_VERSION string = azureOpenAIApiVersion
 output AZURE_OPENAI_RESOURCE string = aifoundry.outputs.aiServicesName
 output REACT_APP_LAYOUT_CONFIG string = backend_docker.outputs.reactAppLayoutConfig
-output SQLDB_DATABASE string = sqlDBModule.outputs.sqlDbName
-output SQLDB_SERVER string = sqlDBModule.outputs.sqlServerName
-output SQLDB_USER_MID string = managedIdentityModule.outputs.managedIdentityBackendAppOutput.clientId
+// output SQLDB_DATABASE string = sqlDBModule.outputs.sqlDbName
+// output SQLDB_SERVER string = sqlDBModule.outputs.sqlServerName
+// output SQLDB_USER_MID string = managedIdentityModule.outputs.managedIdentityBackendAppOutput.clientId
 output USE_AI_PROJECT_CLIENT string = 'False'
 output USE_CHAT_HISTORY_ENABLED string = 'True'
 output DISPLAY_CHART_DEFAULT string = 'False'
