@@ -14,6 +14,7 @@ requirementFile="requirements.txt"
 requirementFileUrl="${baseUrl}infra/scripts/agent_scripts/requirements.txt"
 
 echo "Downloading files..."
+curl --output "azure_credential_utils.py" "${baseUrl}infra/scripts/azure_credential_utils.py"
 curl --output "01_create_agents.py" "${baseUrl}infra/scripts/agent_scripts/01_create_agents.py"
 
 # Download and install Python requirements
