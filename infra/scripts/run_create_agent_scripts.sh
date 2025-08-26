@@ -1,5 +1,6 @@
 #!/bin/bash
-echo "Started the index script setup..."
+set -euo pipefail
+echo "Started the agent creation script setup..."
 
 # Variables
 baseUrl="$1"
