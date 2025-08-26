@@ -790,8 +790,6 @@ async def list_conversations(
         HTTPException: If authentication fails or validation errors occur.
     """
     try:
-        from chat import adjust_processed_data_dates
-        await adjust_processed_data_dates()
 
         authenticated_user = get_authenticated_user_details(
             request_headers=request.headers)

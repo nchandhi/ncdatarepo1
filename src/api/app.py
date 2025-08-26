@@ -16,7 +16,6 @@ import uvicorn
 import os
 
 from chat import router as chat_router
-from history import router as history_router
 from history_sql import router as history_sql_router
 from semantic_kernel.agents import AzureAIAgent, AzureAIAgentSettings
 from auth.azure_credential_utils import get_azure_credential_async
@@ -71,7 +70,6 @@ def build_app() -> FastAPI:
 
     # Include routers
     fastapi_app.include_router(chat_router, prefix="/api", tags=["chat"])
-    fastapi_app.include_router(history_router, prefix="/history", tags=["history"])
     fastapi_app.include_router(history_sql_router, prefix="/historyfab", tags=["historyfab"])
 
     @fastapi_app.get("/health")
