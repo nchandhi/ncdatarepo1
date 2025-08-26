@@ -8,13 +8,6 @@ ai_project_endpoint = 'project_endpoint_to-be-replaced'
 solutionName = 'solution_name_to-be-replaced'
 gptModelName = 'gpt_model_name_to-be-replaced'
 
-print(f"Key Vault Name: {KEY_VAULT_NAME}")
-print(f"Managed Identity Client ID: {MANAGED_IDENTITY_CLIENT_ID}")
-print(f"AI Project Endpoint: {ai_project_endpoint}")
-print(f"Solution Name: {solutionName}")
-print(f"GPT Model Name: {gptModelName}")
-
-print(f"Initializing AI project client...")
 project_client = AIProjectClient(
     endpoint= ai_project_endpoint,
     credential=get_azure_credential(client_id=MANAGED_IDENTITY_CLIENT_ID),
@@ -63,28 +56,24 @@ chart_agent_instructions = """You are an assistant that helps generate valid cha
 
 with project_client:
     agents_client = project_client.agents
-    print("Creating agents...")
 
     orchestrator_agent = agents_client.create_agent(
         model=gptModelName,
         name=f"bicep-DA-OrchestratorAgent-{solutionName}",
         instructions=orchestrator_agent_instructions
     )
-    print(f"Created orchestrator agent: {orchestrator_agent.id}")
 
     sql_agent = agents_client.create_agent(
         model=gptModelName,
         name=f"bicep-DA-ChatWithSQLDatabaseAgent-{solutionName}",
         instructions=sql_agent_instructions
     )
-    print(f"Created SQL agent: {sql_agent.id}")
 
     chart_agent = agents_client.create_agent(
         model=gptModelName,
         name=f"bicep-DA-ChartAgent-{solutionName}",
         instructions=chart_agent_instructions
     )
-    print(f"Created chart agent: {chart_agent.id}")
 
     print(json.dumps({
         "orchestratorAgentId": orchestrator_agent.id,
