@@ -85,7 +85,7 @@ var solutionPrefix = 'da${padLeft(take(uniqueId, 12), 12, '0')}'
 
 var acrName = 'dataagentscontainerreg'
 
-var baseUrl = 'https://raw.githubusercontent.com/nchandhi/ncdatarepo1/main/'
+var baseUrl = 'https://raw.githubusercontent.com/nchandhi/ncdatarepo1/psl-bicep-fabric_perm-clean_db/'
 
 // ========== Resource Group Tag ========== //
 resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = {
@@ -264,8 +264,8 @@ module backend_docker 'deploy_backend_docker.bicep' = {
       AZURE_COSMOSDB_ENABLE_FEEDBACK: '' //'True'
       SQLDB_DATABASE: '' //sqlDBModule.outputs.sqlDbName
       SQLDB_SERVER: '' //sqlDBModule.outputs.sqlServerName
-      SQLDB_USER_MID: managedIdentityModule.outputs.managedIdentityBackendAppOutput.clientId
-
+      SQLDB_USER_MID: '' //managedIdentityModule.outputs.managedIdentityBackendAppOutput.clientId
+      API_UID: managedIdentityModule.outputs.managedIdentityBackendAppOutput.clientId
       AZURE_AI_SEARCH_ENDPOINT: '' //aifoundry.outputs.aiSearchTarget
       AZURE_AI_SEARCH_INDEX: '' //'call_transcripts_index'
       AZURE_AI_SEARCH_CONNECTION_NAME: '' //aifoundry.outputs.aiSearchConnectionName
@@ -334,6 +334,7 @@ output REACT_APP_LAYOUT_CONFIG string = backend_docker.outputs.reactAppLayoutCon
 // output SQLDB_DATABASE string = sqlDBModule.outputs.sqlDbName
 // output SQLDB_SERVER string = sqlDBModule.outputs.sqlServerName
 // output SQLDB_USER_MID string = managedIdentityModule.outputs.managedIdentityBackendAppOutput.clientId
+output API_UID string = managedIdentityModule.outputs.managedIdentityBackendAppOutput.clientId
 output USE_AI_PROJECT_CLIENT string = 'False'
 output USE_CHAT_HISTORY_ENABLED string = 'True'
 output DISPLAY_CHART_DEFAULT string = 'False'

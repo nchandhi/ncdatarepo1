@@ -77,11 +77,11 @@ async def get_fabric_db_connection():
     Returns:
         Connection: Database connection object, or None if connection fails.
     """
-    app_env = os.getenv("APP_ENV", "prod").lower()
-    database = os.getenv("FABRIC_SQL_DATABASE")
-    server = os.getenv("FABRIC_SQL_SERVER")
-    driver = "{ODBC Driver 17 for SQL Server}"
-    api_uid = os.getenv("SQLDB_USER_MID", "")
+    # app_env = os.getenv("APP_ENV", "prod").lower()
+    # database = os.getenv("FABRIC_SQL_DATABASE")
+    # server = os.getenv("FABRIC_SQL_SERVER")
+    # driver = "{ODBC Driver 17 for SQL Server}"
+    api_uid = os.getenv("API_UID", "")
 
     try:
         conn = None
