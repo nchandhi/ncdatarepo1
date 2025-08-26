@@ -47,5 +47,16 @@ output=$(jq -n \
 )
 echo "output: $output"
 
+output=$(jq -n \
+    --arg orchestratorAgentId "$(echo "$agentIds" | jq -r .orchestratorAgentId)" \
+    --arg sqlAgentId "$(echo "$agentIds" | jq -r .sqlAgentId)" \
+    --arg chartAgentId "$(echo "$agentIds" | jq -r .chartAgentId)" \
+    '{
+        orchestratorAgentId: $orchestratorAgentId,
+        sqlAgentId: $sqlAgentId,
+        chartAgentId: $chartAgentId
+    }'
+)
+
 # write outputs for Bicep
 printf '%s' "$output" > "$AZ_SCRIPTS_OUTPUT_PATH"
