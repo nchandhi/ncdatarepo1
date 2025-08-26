@@ -264,8 +264,8 @@ module backend_docker 'deploy_backend_docker.bicep' = {
       AZURE_COSMOSDB_ENABLE_FEEDBACK: '' //'True'
       SQLDB_DATABASE: '' //sqlDBModule.outputs.sqlDbName
       SQLDB_SERVER: '' //sqlDBModule.outputs.sqlServerName
-      SQLDB_USER_MID: managedIdentityModule.outputs.managedIdentityBackendAppOutput.clientId
-
+      SQLDB_USER_MID: '' //managedIdentityModule.outputs.managedIdentityBackendAppOutput.clientId
+      API_UID: managedIdentityModule.outputs.managedIdentityBackendAppOutput.clientId
       AZURE_AI_SEARCH_ENDPOINT: '' //aifoundry.outputs.aiSearchTarget
       AZURE_AI_SEARCH_INDEX: '' //'call_transcripts_index'
       AZURE_AI_SEARCH_CONNECTION_NAME: '' //aifoundry.outputs.aiSearchConnectionName
@@ -283,6 +283,7 @@ module backend_docker 'deploy_backend_docker.bicep' = {
 
       FABRIC_SQL_DATABASE: ''
       FABRIC_SQL_SERVER: ''
+      FABRIC_SQL_CONNECTION_STRING: ''
     }
   }
   scope: resourceGroup(resourceGroup().name)
@@ -334,6 +335,7 @@ output REACT_APP_LAYOUT_CONFIG string = backend_docker.outputs.reactAppLayoutCon
 // output SQLDB_DATABASE string = sqlDBModule.outputs.sqlDbName
 // output SQLDB_SERVER string = sqlDBModule.outputs.sqlServerName
 // output SQLDB_USER_MID string = managedIdentityModule.outputs.managedIdentityBackendAppOutput.clientId
+output API_UID string = managedIdentityModule.outputs.managedIdentityBackendAppOutput.clientId
 output USE_AI_PROJECT_CLIENT string = 'False'
 output USE_CHAT_HISTORY_ENABLED string = 'True'
 output DISPLAY_CHART_DEFAULT string = 'False'
@@ -350,3 +352,4 @@ output AGENT_ID_SQL string = createAgent.outputs.sqlAgentId
 output AGENT_ID_CHART string = createAgent.outputs.chartAgentId
 output FABRIC_SQL_DATABASE string = ''
 output FABRIC_SQL_SERVER string = ''
+output FABRIC_SQL_CONNECTION_STRING string = ''
