@@ -62,7 +62,7 @@ param embeddingModel string = 'text-embedding-ada-002'
 @description('Capacity of the Embedding Model deployment')
 param embeddingDeploymentCapacity int = 80
 
-param imageTag string = 'latest_bicep'
+param imageTag string = 'latest'
 
 param AZURE_LOCATION string=''
 var solutionLocation = empty(AZURE_LOCATION) ? resourceGroup().location : AZURE_LOCATION
@@ -85,7 +85,7 @@ var solutionPrefix = 'da${padLeft(take(uniqueId, 12), 12, '0')}'
 
 var acrName = 'dataagentscontainerreg'
 
-var baseUrl = 'https://raw.githubusercontent.com/nchandhi/ncdatarepo1/psl-bicep-fabric_perm-clean_db/'
+var baseUrl = 'https://raw.githubusercontent.com/nchandhi/ncdatarepo1/main/'
 
 // ========== Resource Group Tag ========== //
 resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = {
