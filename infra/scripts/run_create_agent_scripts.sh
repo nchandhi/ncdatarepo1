@@ -1,5 +1,4 @@
 #!/bin/bash
-set -euo pipefail
 echo "Started the agent creation script setup..."
 
 # Variables

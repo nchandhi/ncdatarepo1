@@ -14,7 +14,7 @@ from azure.search.documents.indexes.models import (
     SemanticField,
     SearchIndex
 )
-from scripts.azure_credential_utils import get_azure_credential
+from azure_credential_utils import get_azure_credential
 
 # === Configuration ===
 KEY_VAULT_NAME = 'kv_to-be-replaced'

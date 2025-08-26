@@ -5,7 +5,7 @@ from pathlib import Path
 from azure.identity import get_bearer_token_provider
 from azure.keyvault.secrets import SecretClient
 from content_understanding_client import AzureContentUnderstandingClient
-from scripts.azure_credential_utils import get_azure_credential
+from azure_credential_utils import get_azure_credential
 
 
 # === Configuration ===
