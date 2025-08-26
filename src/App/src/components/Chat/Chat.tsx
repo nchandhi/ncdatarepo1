@@ -129,13 +129,8 @@ const Chat: React.FC<ChatProps> = ({
   };
   const isChartQuery = (query: string) => {
     const chartKeywords = ["chart", "graph", "visualize", "plot"];
-    
-    // Convert to lowercase for case-insensitive matching
-    const lowerCaseQuery = query.toLowerCase();
-    
-    // Use word boundary regex to match whole words only
-    return chartKeywords.some(keyword => 
-      new RegExp(`\\b${keyword}\\b`).test(lowerCaseQuery)
+    return chartKeywords.some((keyword) =>
+      query.toLowerCase().includes(keyword)
     );
   };
 
@@ -484,8 +479,7 @@ const Chat: React.FC<ChatProps> = ({
                     runningText = runningText + textValue;
                   } else if (typeof parsed === "object" && !hasError) {
                     const responseContent  = parsed?.choices?.[0]?.messages?.[0]?.content;
-                     console.log("Response Content:", responseContent);
-                     console.log("Type of Response Content:", typeof responseContent);
+                     
                     const answerKey = `"answer":`;
                     const answerStartIndex  = responseContent.indexOf(answerKey);
 
@@ -509,7 +503,6 @@ const Chat: React.FC<ChatProps> = ({
                     
                     
                     streamMessage.content = answerText || "";
-                    console.log("Stream message content:", streamMessage.content);
                     streamMessage.role =
                       parsed?.choices?.[0]?.messages?.[0]?.role || ASSISTANT;
 
@@ -552,14 +545,13 @@ const Chat: React.FC<ChatProps> = ({
             const splitRunningText = runningText.split("}{");
             let parsedChartResponse: any = {};
             parsedChartResponse= JSON.parse("{" + splitRunningText[splitRunningText.length - 1]);
-            console.log("Parsed Chart Response:552::", parsedChartResponse);
             let chartResponse : any = {};
             try {
               chartResponse = JSON.parse(parsedChartResponse?.choices[0]?.messages[0]?.content)
             } catch (e) {
               chartResponse = parsedChartResponse?.choices[0]?.messages[0]?.content;
             }
-            console.log("Chart Response after second parse if needed:", chartResponse);
+
             if (typeof chartResponse === 'object' && chartResponse?.answer) {
               chartResponse = chartResponse.answer;
             }
