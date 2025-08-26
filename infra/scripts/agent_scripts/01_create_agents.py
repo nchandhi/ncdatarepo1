@@ -1,6 +1,6 @@
 import json
 from azure.ai.projects import AIProjectClient
-from scripts.azure_credential_utils import get_azure_credential
+from azure_credential_utils import get_azure_credential
 
 KEY_VAULT_NAME = 'kv_to-be-replaced'
 MANAGED_IDENTITY_CLIENT_ID = 'mici_to-be-replaced'
