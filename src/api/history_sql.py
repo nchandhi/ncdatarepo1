@@ -82,7 +82,8 @@ async def get_fabric_db_connection():
     database = os.getenv("FABRIC_SQL_DATABASE")
     server = os.getenv("FABRIC_SQL_SERVER")
     driver = "{ODBC Driver 17 for SQL Server}"
-    api_uid = os.getenv("SQLDB_USER_MID", "")
+    # api_uid = os.getenv("API_UID", "")
+    fabric_sql_connection_string = os.getenv("FABRIC_SQL_CONNECTION_STRING", "")
 
     try:
         conn = None
@@ -100,7 +101,8 @@ async def get_fabric_db_connection():
                 connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};"
                 conn = pyodbc.connect(connection_string, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct})
         else:
-            connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};UID={api_uid};Authentication=ActiveDirectoryMSI;"
+            # connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};UID={api_uid};Authentication=ActiveDirectoryMSI;"
+            connection_string = fabric_sql_connection_string
             conn = pyodbc.connect(connection_string)
         
         return conn
@@ -790,6 +792,8 @@ async def list_conversations(
         HTTPException: If authentication fails or validation errors occur.
     """
     try:
+        # from chat import adjust_processed_data_dates
+        # await adjust_processed_data_dates()
 
         authenticated_user = get_authenticated_user_details(
             request_headers=request.headers)
