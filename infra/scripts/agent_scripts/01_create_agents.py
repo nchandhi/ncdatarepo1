@@ -59,19 +59,19 @@ with project_client:
 
     orchestrator_agent = agents_client.create_agent(
         model=gptModelName,
-        name=f"bicep-DA-OrchestratorAgent-{solutionName}",
+        name=f"ChatAgent-{solutionName}",
         instructions=orchestrator_agent_instructions
     )
 
     sql_agent = agents_client.create_agent(
         model=gptModelName,
-        name=f"bicep-DA-ChatWithSQLDatabaseAgent-{solutionName}",
+        name=f"SQLAgent-{solutionName}",
         instructions=sql_agent_instructions
     )
     
     chart_agent = agents_client.create_agent(
         model=gptModelName,
-        name=f"bicep-DA-ChartAgent-{solutionName}",
+        name=f"ChartAgent-{solutionName}",
         instructions=chart_agent_instructions
     )
 

@@ -18,6 +18,20 @@ hooks:
       run: |
         Write-Host "Web app URL: "
         Write-Host "$env:WEB_APP_URL" -ForegroundColor Cyan
+
+        $workspaceId           = "<fabric_workspace_id>"
+        $solutionName          = $env:SOLUTION_NAME
+        $aiServiceName         = $env:AI_SERVICE_NAME
+        $backendApiMiPrincipal = $env:API_PID
+        $backendApiName        = $env:API_APP_NAME
+        $resourceGroup         = $env:RESOURCE_GROUP
+
+        # Build the exact command string (quoted to survive spaces)
+        $cmdLine = 'sh ./run_fabric_items_scripts.sh "{0}" "{1}" "{2}" "{3}" "{4}" "{5}"' -f `
+            $workspaceId, $solutionName, $aiServiceName$backendApiMiPrincipal, $backendApiName, $resourceGroup
+
+        Write-Host $cmdLine -ForegroundColor Cyan   
+
       shell: pwsh
       continueOnError: false
       interactive: true
