@@ -346,7 +346,7 @@ output AZURE_ENV_IMAGETAG string = imageTag
 
 output AI_SERVICE_NAME string = aifoundry.outputs.aiServicesName
 output API_APP_NAME string = backend_docker.outputs.appName
-output API_PID string = managedIdentityModule.outputs.managedIdentityBackendAppOutput.principalId
+output API_PID string = managedIdentityModule.outputs.managedIdentityBackendAppOutput.objectId
 
 output API_APP_URL string = backend_docker.outputs.appUrl
 output WEB_APP_URL string = frontend_docker.outputs.appUrl
