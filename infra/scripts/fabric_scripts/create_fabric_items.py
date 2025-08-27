@@ -16,6 +16,7 @@ args = p.parse_args()
 
 workspaceId = args.workspaceId
 solutionname = args.solutionname
+backend_app_mi = args.backend_app_mi
 
 def get_fabric_headers():
     credential = AzureCliCredential()
@@ -93,6 +94,8 @@ for sqldb in sqlsdbs_res['value']:
         sqldb_id = sqldb['id']
         FABRIC_SQL_DATABASE = sqldb['properties']['databaseName']
         FABRIC_SQL_SERVER = sqldb['properties']['serverFqdn'].replace(',1433','')
+        odbc_driver = "{ODBC Driver 17 for SQL Server}"
+        FABRIC_SQL_CONNECTION_STRING = f"DRIVER={odbc_driver};SERVER={FABRIC_SQL_SERVER};DATABASE={FABRIC_SQL_DATABASE};UID={backend_app_mi};Authentication=ActiveDirectoryMSI"
 # print(sqldb_id)
 
 
@@ -236,3 +239,4 @@ roleassignment_res = requests.post(fabric_ra_url, headers=fabric_headers, json=r
 with open(args.exports_file, "w", encoding="utf-8", newline="\n") as f:
     f.write("export FABRIC_SQL_SERVER1=" + shlex.quote(FABRIC_SQL_SERVER) + "\n")
     f.write("export FABRIC_SQL_DATABASE1=" + shlex.quote(FABRIC_SQL_DATABASE) + "\n")
+    f.write("export FABRIC_SQL_CONNECTION_STRING1=" + shlex.quote(FABRIC_SQL_CONNECTION_STRING) + "\n")
