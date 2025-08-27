@@ -28,7 +28,9 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 This will allow the scripts to run for the current session without permanently changing your system's policy.
 
 ## Deployment Options & Steps
-
+###  Fabric Deployment 
+<!-- if you have an existing workspace use this Id -->
+1. Follow the steps in [Fabric Deployment](./Fabric_deployment.md) to create a Fabric workspace and deploy Fabric resources
 Pick from the options below to see step-by-step instructions for GitHub Codespaces, VS Code Dev Containers, Local Environments, and Bicep deployments.
 
 | [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/microsoft/Conversation-Knowledge-Mining-Solution-Accelerator) | [![Open in Dev Containers](https://img.shields.io/static/v1?style=for-the-badge&label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/microsoft/Conversation-Knowledge-Mining-Solution-Accelerator) | 
@@ -181,6 +183,7 @@ Once you've opened the project in [Codespaces](#github-codespaces), [Dev Contain
 5. Once the deployment has completed successfully, open the [Azure Portal](https://portal.azure.com/), go to the deployed resource group, find the App Service, and get the app URL from `Default domain`.
 
 6. If you are done trying out the application, you can delete the resources by running `azd down`.
+
 
 ## Post Deployment Steps
 
