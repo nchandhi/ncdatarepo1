@@ -344,6 +344,10 @@ output AZURE_AI_AGENT_MODEL_DEPLOYMENT_NAME string = gptModelName
 output ACR_NAME string = acrName
 output AZURE_ENV_IMAGETAG string = imageTag
 
+output AI_SERVICE_NAME string = aifoundry.outputs.aiServicesName
+output API_APP_NAME string = backend_docker.outputs.appName
+output API_PID string = managedIdentityModule.outputs.managedIdentityBackendAppOutput.principalId
+
 output API_APP_URL string = backend_docker.outputs.appUrl
 output WEB_APP_URL string = frontend_docker.outputs.appUrl
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = aifoundry.outputs.applicationInsightsConnectionString

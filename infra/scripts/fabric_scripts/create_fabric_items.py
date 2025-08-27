@@ -1,204 +1,119 @@
 from azure.identity import DefaultAzureCredential
-import base64
-import json
 import requests
-import pandas as pd
-import os
-from glob import iglob
-import zipfile
 import time
-
-
+import json
 # credential = DefaultAzureCredential()
 from azure.identity import AzureCliCredential
-credential = AzureCliCredential()
+import shlex
+import argparse
 
-cred = credential.get_token('https://api.fabric.microsoft.com/.default')
-token = cred.token
+p = argparse.ArgumentParser()
+p.add_argument("--workspaceId", required=True)
+p.add_argument("--solutionname", required=True)
+p.add_argument("--backend_app_mi", required=True)
+p.add_argument("--exports-file", required=True)
+args = p.parse_args()
 
-fabric_headers = {"Authorization": "Bearer " + token.strip()}
+workspaceId = args.workspaceId
+solutionname = args.solutionname
 
-key_vault_name = 'kv_to-be-replaced'
-workspaceId = "workspaceId_to-be-replaced"
-solutionname = "solutionName_to-be-replaced"
-create_workspace = False
+def get_fabric_headers():
+    credential = AzureCliCredential()
+    cred = credential.get_token('https://api.fabric.microsoft.com/.default')
+    token = cred.token
+    fabric_headers = {"Authorization": "Bearer " + token.strip()}
+    return(fabric_headers)
 
-# pipeline_notebook_name = 'pipeline_notebook'
-pipeline_notebook_name = 'cu_pipeline_notebook'
-pipeline_name = 'data_pipeline'
+fabric_headers = get_fabric_headers()
+
 lakehouse_name = 'lakehouse_' + solutionname
+sqldb_name = 'sqldatabase_' + solutionname
+pipeline_name = 'data_pipeline_' + solutionname
 
-print("workspace id: " ,workspaceId)
-
-if create_workspace == True:
-  workspace_name = 'workspace_' + solutionname
-
-  # create workspace
-  ws_url = 'https://api.fabric.microsoft.com/v1/workspaces'
-
-  ws_data = {
-    "displayName": workspace_name
-  }
-  ws_res = requests.post(ws_url, headers=fabric_headers, json=ws_data)
-  ws_details = ws_res.json()
-  # print(ws_details['id'])
-  workspaceId = ws_details['id']
+# print("workspace id: " ,workspaceId)
 
 fabric_base_url = f"https://api.fabric.microsoft.com/v1/workspaces/{workspaceId}/"
 fabric_items_url = f"https://api.fabric.microsoft.com/v1/workspaces/{workspaceId}/items/"
+fabric_sql_url = f"https://api.fabric.microsoft.com/v1/workspaces/{workspaceId}/sqlDatabases/"
 
 fabric_create_workspace_url = f"https://api.fabric.microsoft.com/v1/workspaces"
 
-#get workspace name
-ws_res = requests.get(fabric_base_url, headers=fabric_headers)
-workspace_name = ws_res.json()['displayName']
-
-#create lakehouse
+# create lakehouse
 lakehouse_data = {
   "displayName": lakehouse_name,
   "type": "Lakehouse"
 }
 lakehouse_res = requests.post(fabric_items_url, headers=fabric_headers, json=lakehouse_data)
+# print(lakehouse_res.json())
+lakehouseId = lakehouse_res.json()['id']
 
-# print("lakehouse name: ", lakehouse_name)
 
-# copy local files to lakehouse
-from azure.storage.filedatalake import (
-    DataLakeServiceClient
-)
+fabric_headers = get_fabric_headers()
 
-account_name = "onelake" #always onelake
-data_path = f"{lakehouse_name}.Lakehouse/Files/"
-folder_path = "/"
+# create sql db
+sqldb_data = {
+  "displayName": sqldb_name,
+  "description": "SQL Database"
+}
+sqldb_res = requests.post(fabric_sql_url, headers=fabric_headers, json=sqldb_data)
+if sqldb_res.status_code == 202:
+    print("sql database creation accepted with status 202")
+    
+    # print(sqldb_res.headers)
+    retry_url = sqldb_res.headers.get("Location")
 
-account_url = f"https://{account_name}.dfs.fabric.microsoft.com"
-service_client = DataLakeServiceClient(account_url, credential=credential)
+    # wait_seconds = 10
+    wait_seconds = int(sqldb_res.headers.get("Retry-After"))
+    attempt = 1
+    status = 'Running'
+    while status == 'Running':
+        print(f"Polling attempt {attempt}...")
+        time.sleep(wait_seconds)
+        retry_response = requests.get(retry_url, headers=fabric_headers)
+        # wait_seconds = int(retry_response.headers.get("Retry-After"))
+        status = retry_response.json()['status']
+        attempt += 1
 
-#Create a file system client for the workspace
-file_system_client = service_client.get_file_system_client(workspace_name)
+    print('sql database created',retry_response.json()['status'])
 
-directory_client = file_system_client.get_directory_client(f"{data_path}/{folder_path}")
+elif sqldb_res.status_code == 200:
+    print('sql database created')
+else:
+    print(f"sql database creation failed with status: {sqldb_res.status_code}")
+    print(sqldb_res.text)
 
-print('uploading files')
-# upload audio files
-data_folder_path = os.path.join("..", "..", "data", "audio_data")
-file_names = zip_files = list(iglob(os.path.join(data_folder_path, "audio*.zip")))
-for file_name in file_names:
-    # Check if the file is a zip file
-    if file_name.endswith('.zip'):
-        # print('checking if filename ends in zip')
-        # Extract files from the zip folder
-        with zipfile.ZipFile(file_name, 'r') as zip_ref:
-            # print('zip file')
-            extract_dir = f"{file_name}_extracted"
-            zip_ref.extractall(extract_dir)
+fabric_headers = get_fabric_headers()
+# get SQL DBs list
+sqldb_res = requests.get(fabric_sql_url, headers=fabric_headers)
+sqlsdbs_res = sqldb_res.json()
+# print(sqlsdbs_res)
+
+for sqldb in sqlsdbs_res['value']:
+    if sqldb['displayName'] == sqldb_name:
+        sqldb_id = sqldb['id']
+        FABRIC_SQL_DATABASE = sqldb['properties']['databaseName']
+        FABRIC_SQL_SERVER = sqldb['properties']['serverFqdn'].replace(',1433','')
+# print(sqldb_id)
+
+
+sql_filepath = 'data_sql.sql'
+with open(sql_filepath, 'r', encoding='utf-8') as f:
+    sql_query_str = f.read()
+
+fabric_headers = get_fabric_headers()
+
+# get connection Id
+fabric_connection_url = f"https://api.fabric.microsoft.com/v1/connections"
+conn_res = requests.get(fabric_connection_url, headers=fabric_headers)
+for r in conn_res.json()['value']:
+    if r['connectionDetails']['path'] == 'FabricSql':
+    #   print(r['id'])
+        sqldb_connection_id = r['id']
         
-        local_path = extract_dir
-        # print('ex dir', extract_dir)
-        # upload extracted folder
-        file_names = [f for f in iglob(os.path.join(local_path, "**", "*"), recursive=True) if os.path.isfile(f)]
-        # print('file_names ex', file_names)
-        for file_name in file_names:
-            upload_file_name = os.path.basename(file_name)
-            file_client = directory_client.get_file_client("cu_audio_files_all/" + upload_file_name)
-            # with open(file=os.path.join(extract_dir, file_name), mode="rb") as data:
-            with open(file=file_name, mode="rb") as data:
-                # print('data', data)
-                file_client.upload_data(data, overwrite=True)
-
-
-# upload content understanding json file
-folder_path = '/cu_analyzer_file'
-local_path = os.path.join("..", "cu_scripts", "*.json")
-
-file_names = [f for f in iglob(local_path) if os.path.isfile(f)]
-
-for file_name in file_names:
-  base_name = os.path.basename(file_name)
-  path = f"{folder_path}/{base_name}"
-
-  file_client = directory_client.get_file_client(path)
-  with open(file=file_name, mode="rb") as data:
-    file_client.upload_data(data, overwrite=True)
-
-#get environments
-try:
-  fabric_env_url = f"https://api.fabric.microsoft.com/v1/workspaces/{workspaceId}/environments/"
-  env_res = requests.get(fabric_env_url, headers=fabric_headers)
-  env_res_id = env_res.json()['value'][0]['id']
-  # print(env_res.json())
-except:
-  env_res_id = ''
-
-#create notebook items
-# notebook_names =['pipeline_notebook','01_process_data','02_create_calendar_data']
-notebook_names = ['cu_pipeline_notebook', 'create_cu_template', 'process_cu_data']
-# notebook_names =['process_data_new']
-
-# add sleep timer
-time.sleep(120)  # 1 minute
-
-for notebook_name in notebook_names:
-    with open('notebooks/cu/'+ notebook_name +'.ipynb', 'r') as f:
-        notebook_json = json.load(f)
-
-    print("lakehouse_res")
-    print(lakehouse_res)
-    print(lakehouse_res.json())
+        # else: 
+        #     # create connection 
     
-    try:
-        notebook_json['metadata']['dependencies']['lakehouse']['default_lakehouse'] = lakehouse_res.json()['id']
-        notebook_json['metadata']['dependencies']['lakehouse']['default_lakehouse_name'] = lakehouse_res.json()['displayName']
-        notebook_json['metadata']['dependencies']['lakehouse']['default_lakehouse_workspace_id'] = lakehouse_res.json()['workspaceId']
-    except:
-        pass
-    
-    if env_res_id != '':
-        try:
-            notebook_json['metadata']['dependencies']['environment']['environmentId'] = env_res_id
-            notebook_json['metadata']['dependencies']['environment']['workspaceId'] = lakehouse_res.json()['workspaceId']
-        except:
-            pass
-
-
-    notebook_base64 = base64.b64encode(json.dumps(notebook_json).encode('utf-8'))
-    
-    notebook_data = {
-        "displayName":notebook_name,
-        "type":"Notebook",
-        "definition" : {
-            "format": "ipynb",
-            "parts": [
-                {
-                    "path": "notebook-content.ipynb",
-                    "payload": notebook_base64.decode('utf-8'),
-                    "payloadType": "InlineBase64"
-                }
-            ]
-        }
-    }
-    
-    fabric_response = requests.post(fabric_items_url, headers=fabric_headers, json=notebook_data)
-    #print(fabric_response.json())
-
-time.sleep(120)
-
-# get wrapper notebook id
-fabric_notebooks_url = f"https://api.fabric.microsoft.com/v1/workspaces/{workspaceId}/notebooks"
-notebooks_res = requests.get(fabric_notebooks_url, headers=fabric_headers)
-notebooks_res.json()
-
-pipeline_notebook_id = ''
-print("notebook_res.json.values: ", notebooks_res.json().values())
-for n in notebooks_res.json().values():
-    for notebook in n:
-        print("notebook displayname", notebook['displayName'])
-        if notebook['displayName'] == pipeline_notebook_name:
-            pipeline_notebook_id = notebook['id']
-            break
-print("pipeline_notebook_id: ", pipeline_notebook_id)
-
-
+fabric_headers = get_fabric_headers()
 # create pipeline item
 pipeline_json = {
     "name": pipeline_name,
@@ -206,7 +121,7 @@ pipeline_json = {
         "activities": [
             {
                 "name": "process_data",
-                "type": "TridentNotebook",
+                "type": "Script",
                 "dependsOn": [],
                 "policy": {
                     "timeout": "0.12:00:00",
@@ -215,14 +130,38 @@ pipeline_json = {
                     "secureOutput": "false",
                     "secureInput": "false"
                 },
+                "connectionSettings": {
+                    "name": "sqldatabase",
+                    "properties": {
+                        "annotations": [],
+                        "type": "FabricSqlDatabase",
+                        "typeProperties": {
+                            "workspaceId": workspaceId,
+                            "artifactId": sqldb_id
+                        },
+                        "externalReferences": {
+                            "connection": sqldb_connection_id 
+                        }
+                    }
+                },
                 "typeProperties": {
-                    "notebookId": pipeline_notebook_id,
-                    "workspaceId": workspaceId
+                    "scripts": [
+                        {
+                            "type": "Query",
+                            "text": {
+                                "value": sql_query_str,
+                                "type": "Expression"
+                            }
+                        }
+                    ],
+                    "scriptBlockExecutionTimeout": "02:00:00"
                 }
             }
         ]
     }
 }
+
+import base64
 
 pipeline_base64 = base64.b64encode(json.dumps(pipeline_json).encode('utf-8'))
 
@@ -242,8 +181,58 @@ pipeline_data = {
     }
 
 pipeline_response = requests.post(fabric_items_url, headers=fabric_headers, json=pipeline_data)
-pipeline_response.json()
+# print('pipeline response: ',pipeline_response.json())
+
+
+pipeline_id = pipeline_response.json()['id']
+
+fabric_headers = get_fabric_headers()
 
 # run the pipeline once
-job_url = fabric_base_url + f"items/{pipeline_response.json()['id']}/jobs/instances?jobType=Pipeline"
+job_url = fabric_base_url + f"items/{pipeline_id}/jobs/instances?jobType=Pipeline"
 job_response = requests.post(job_url, headers=fabric_headers)
+# print(job_response)
+
+if job_response.status_code == 202:
+    print("pipeline run accepted with status 202")
+    
+    retry_url = job_response.headers.get("Location")
+
+    # wait_seconds = 20
+    wait_seconds = int(job_response.headers.get("Retry-After"))
+    attempt = 1
+    status = ''
+    while (status != 'Completed') and (status != 'Failed'):
+        print(f"Polling attempt {attempt}...")
+        time.sleep(wait_seconds)
+        retry_response = requests.get(retry_url, headers=fabric_headers)
+        # print(retry_response.json())
+        # wait_seconds = int(retry_response.headers.get("Retry-After"))
+        status = retry_response.json()['status']
+        # print(status)
+        attempt += 1
+
+    print('pipeline run completed',retry_response.json()['status'])
+
+elif job_response.status_code == 200:
+    print('pipeline run completed')
+else:
+    print(f"pipeline run request failed with status: {job_response.status_code}")
+    print('pipeline job response: ',job_response.text)
+
+
+#create role assignments
+fabric_ra_url = f"https://api.fabric.microsoft.com/v1/workspaces/{workspaceId}/roleAssignments"
+roleassignment_json ={
+  "principal": {
+    "id": args.backend_app_mi, 
+    "type": "ServicePrincipal"
+  },
+  "role": "Contributor"
+}
+roleassignment_res = requests.post(fabric_ra_url, headers=fabric_headers, json=roleassignment_json)
+
+# Write shell-safe exports
+with open(args.exports_file, "w", encoding="utf-8", newline="\n") as f:
+    f.write("export FABRIC_SQL_SERVER1=" + shlex.quote(FABRIC_SQL_SERVER) + "\n")
+    f.write("export FABRIC_SQL_DATABASE1=" + shlex.quote(FABRIC_SQL_DATABASE) + "\n")
