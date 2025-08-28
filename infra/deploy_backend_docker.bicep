@@ -135,6 +135,6 @@ module assignAiUserRoleToAiProject 'deploy_foundry_role_assignment.bicep' = {
 }
 
 output appUrl string = appService.outputs.appUrl
-output appName string = appService.name
+output appName string = name
 output reactAppLayoutConfig string = reactAppLayoutConfig
 output appInsightInstrumentationKey string = reference(applicationInsightsId, '2015-05-01').InstrumentationKey
