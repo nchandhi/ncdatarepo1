@@ -10,13 +10,15 @@ import argparse
 p = argparse.ArgumentParser()
 p.add_argument("--workspaceId", required=True)
 p.add_argument("--solutionname", required=True)
-p.add_argument("--backend_app_mi", required=True)
+p.add_argument("--backend_app_pid", required=True)
+p.add_argument("--backend_app_uid", required=True)
 p.add_argument("--exports-file", required=True)
 args = p.parse_args()
 
 workspaceId = args.workspaceId
 solutionname = args.solutionname
-backend_app_mi = args.backend_app_mi
+backend_app_pid = args.backend_app_pid
+backend_app_uid = args.backend_app_uid
 
 def get_fabric_headers():
     credential = AzureCliCredential()
@@ -95,7 +97,7 @@ for sqldb in sqlsdbs_res['value']:
         FABRIC_SQL_DATABASE = sqldb['properties']['databaseName']
         FABRIC_SQL_SERVER = sqldb['properties']['serverFqdn'].replace(',1433','')
         odbc_driver = "{ODBC Driver 17 for SQL Server}"
-        FABRIC_SQL_CONNECTION_STRING = f"DRIVER={odbc_driver};SERVER={FABRIC_SQL_SERVER};DATABASE={FABRIC_SQL_DATABASE};UID={backend_app_mi};Authentication=ActiveDirectoryMSI"
+        FABRIC_SQL_CONNECTION_STRING = f"DRIVER={odbc_driver};SERVER={FABRIC_SQL_SERVER};DATABASE={{FABRIC_SQL_DATABASE}};UID={backend_app_uid};Authentication=ActiveDirectoryMSI"
 # print(sqldb_id)
 
 
@@ -228,7 +230,7 @@ else:
 fabric_ra_url = f"https://api.fabric.microsoft.com/v1/workspaces/{workspaceId}/roleAssignments"
 roleassignment_json ={
   "principal": {
-    "id": args.backend_app_mi, 
+    "id": args.backend_app_pid, 
     "type": "ServicePrincipal"
   },
   "role": "Contributor"

@@ -22,13 +22,14 @@ hooks:
         $workspaceId           = "<fabric_workspace_id>"
         $solutionName          = $env:SOLUTION_NAME
         $aiServiceName         = $env:AI_SERVICE_NAME
-        $backendApiMiPrincipal = $env:API_PID
+        $backendApiPID         = $env:API_PID
+        $backendApiUID         = $env:API_UID
         $backendApiName        = $env:API_APP_NAME
         $resourceGroup         = $env:RESOURCE_GROUP_NAME
 
         # Build the exact command string (quoted to survive spaces)
         $cmdLine = 'sh ./run_fabric_items_scripts.sh {0} {1} {2} {3} {4} {5}' -f `
-            $workspaceId, $solutionName, $aiServiceName, $backendApiMiPrincipal, $backendApiName, $resourceGroup
+            $workspaceId, $solutionName, $aiServiceName, $backendApiPID, $backendApiUID, $backendApiName, $resourceGroup
 
         Write-Host $cmdLine -ForegroundColor Cyan   
 
@@ -43,11 +44,12 @@ hooks:
         workspaceId="<fabric_workspace_id>"
         solutionName="$SOLUTION_NAME"
         aiServiceName="$AI_SERVICE_NAME"
-        backendApiMiPrincipal="$API_PID"
+        backendApiPID="$API_PID"
+        backendApiUID="$API_UID"
         backendApiName="$API_APP_NAME"
         resourceGroup="$RESOURCE_GROUP_NAME"
 
-        cmdLine="sh ./run_fabric_items_scripts.sh $workspaceId $solutionName $aiServiceName $backendApiMiPrincipal $backendApiName $resourceGroup"
+        cmdLine="sh ./run_fabric_items_scripts.sh $workspaceId $solutionName $aiServiceName $backendApiPID $backendApiUID $backendApiName $resourceGroup"
         echo $cmdLine
         
       shell: sh

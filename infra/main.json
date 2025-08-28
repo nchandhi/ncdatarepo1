@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "2983386802576047616"
+      "templateHash": "17781479230820630271"
     }
   },
   "parameters": {
@@ -1939,7 +1939,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "13982923459041015016"
+              "templateHash": "13222124660310183872"
             }
           },
           "parameters": {
@@ -2524,7 +2524,7 @@
             },
             "appName": {
               "type": "string",
-              "value": "[format('{0}-app-module', parameters('name'))]"
+              "value": "[parameters('name')]"
             },
             "reactAppLayoutConfig": {
               "type": "string",
@@ -2957,7 +2957,7 @@
     },
     "API_PID": {
       "type": "string",
-      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, resourceGroup().name), 'Microsoft.Resources/deployments', 'deploy_managed_identity'), '2022-09-01').outputs.managedIdentityBackendAppOutput.value.principalId]"
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, resourceGroup().name), 'Microsoft.Resources/deployments', 'deploy_managed_identity'), '2022-09-01').outputs.managedIdentityBackendAppOutput.value.objectId]"
     },
     "API_APP_URL": {
       "type": "string",

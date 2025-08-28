@@ -5,9 +5,10 @@ echo "starting script"
 fabricWorkspaceId="$1"
 solutionName="$2"
 aiFoundryName="$3"
-backend_app_mi="$4"
-app_service="$5"
-resource_group="$6"
+backend_app_pid="$4"
+backend_app_uid="$5"
+app_service="$6"
+resource_group="$7"
 
 # # get signed user
 # echo "Getting signed in user id"
@@ -67,7 +68,7 @@ tmp="$(mktemp)"
 cleanup() { rm -f "$tmp"; }
 trap cleanup EXIT
 
-python -u create_fabric_items.py --workspaceId "$fabricWorkspaceId" --solutionname "$solutionName" --backend_app_mi "$backend_app_mi" --exports-file "$tmp"
+python -u create_fabric_items.py --workspaceId "$fabricWorkspaceId" --solutionname "$solutionName" --backend_app_pid "$backend_app_pid" --backend_app_uid "$backend_app_uid" --exports-file "$tmp"
 
 source "$tmp"
 
