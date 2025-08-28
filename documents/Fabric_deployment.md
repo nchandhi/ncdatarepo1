@@ -19,4 +19,5 @@
         5.  Click Add from .yml
         6.  Upload .yml from [here](.././infra/scripts/fabric_scripts/ckm_cu_env.yml)
         7.  Click Publish -->
-    7.  Retrieve Workspace ID from URL, refer to documentation additional assistance ([here](https://learn.microsoft.com/en-us/fabric/admin/portal-workspace#identify-your-workspace-id))
+    7.  Retrieve Workspace ID from URL for future steps. Refer to documentation additional assistance ([here](https://learn.microsoft.com/en-us/fabric/admin/portal-workspace#identify-your-workspace-id))
+
