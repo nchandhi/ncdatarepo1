@@ -101,173 +101,186 @@ for sqldb in sqlsdbs_res['value']:
 # print(sqldb_id)
 
 
-sql_filepath = 'data_sql.sql'
-with open(sql_filepath, 'r', encoding='utf-8') as f:
-    sql_query_str = f.read()
 
-# create tables and upload data
-from azure.identity import AzureCliCredential
-import pyodbc
-import struct
+# # create tables and upload data
+# from azure.identity import AzureCliCredential
+# import pyodbc
+# import struct
 
-def get_fabric_db_connection():
-    server = FABRIC_SQL_SERVER
-    database = FABRIC_SQL_DATABASE
-    driver = "{ODBC Driver 17 for SQL Server}"
+# def get_fabric_db_connection():
+#     server = FABRIC_SQL_SERVER
+#     database = FABRIC_SQL_DATABASE
+#     driver = "{ODBC Driver 17 for SQL Server}"
     
-    try:
-        conn=None
-        connection_string = ""
+#     try:
+#         conn=None
+#         connection_string = ""
  
-        with AzureCliCredential() as credential:
-            token = credential.get_token("https://database.windows.net/.default")
-            # logging.info("FABRIC-SQL-TOKEN: %s" % token.token)
-            token_bytes = token.token.encode("utf-16-LE")
-            token_struct = struct.pack(
-                f"<I{len(token_bytes)}s",
-                len(token_bytes),
-                token_bytes
-            )
+#         with AzureCliCredential() as credential:
+#             token = credential.get_token("https://database.windows.net/.default")
+#             # logging.info("FABRIC-SQL-TOKEN: %s" % token.token)
+#             token_bytes = token.token.encode("utf-16-LE")
+#             token_struct = struct.pack(
+#                 f"<I{len(token_bytes)}s",
+#                 len(token_bytes),
+#                 token_bytes
+#             )
 
-            SQL_COPT_SS_ACCESS_TOKEN = 1256
-            connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};"  
-            conn = pyodbc.connect( connection_string, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct})      
-            print('connected to fabric sql db')        
+#             SQL_COPT_SS_ACCESS_TOKEN = 1256
+#             connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};"  
+#             conn = pyodbc.connect( connection_string, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct})      
+#             print('connected to fabric sql db')        
  
-        return conn
-    except :
-        print("Failed to connect to Fabric SQL Database")
-        pass
+#         return conn
+#     except :
+#         print("Failed to connect to Fabric SQL Database")
+#         pass
 
-conn = get_fabric_db_connection()
-cursor = conn.cursor()
-print(cursor)
-sql_filename = 'retail_data_sql.sql'
-with open(sql_filename, 'r', encoding='utf-8') as f:
-    sql_script = f.read()
-    cursor.execute(sql_script)
-cursor.commit()
-conn.close()    
+# conn = get_fabric_db_connection()
+# cursor = conn.cursor()
+# print(cursor)
+# sql_filename = 'data_sql.sql'
+# with open(sql_filename, 'r', encoding='utf-8') as f:
+#     sql_script = f.read()
+#     cursor.execute(sql_script)
+# cursor.commit()
+# conn.close()    
 
-# fabric_headers = get_fabric_headers()
+fabric_headers = get_fabric_headers()
 
-# # get connection Id
-# fabric_connection_url = f"https://api.fabric.microsoft.com/v1/connections"
-# conn_res = requests.get(fabric_connection_url, headers=fabric_headers)
-# for r in conn_res.json()['value']:
-#     if r['connectionDetails']['path'] == 'FabricSql':
-#     #   print(r['id'])
-#         sqldb_connection_id = r['id']
+# get connection Id
+fabric_connection_url = f"https://api.fabric.microsoft.com/v1/connections"
+conn_res = requests.get(fabric_connection_url, headers=fabric_headers)
+for r in conn_res.json()['value']:
+    if r['connectionDetails']['path'] == 'FabricSql':
+    #   print(r['id'])
+        sqldb_connection_id = r['id']
         
-#         # else: 
-#         #     # create connection 
+        # else: 
+        #     # create connection 
     
-# fabric_headers = get_fabric_headers()
-# # create pipeline item
-# pipeline_json = {
-#     "name": pipeline_name,
-#     "properties": {
-#         "activities": [
-#             {
-#                 "name": "process_data",
-#                 "type": "Script",
-#                 "dependsOn": [],
-#                 "policy": {
-#                     "timeout": "0.12:00:00",
-#                     "retry": 0,
-#                     "retryIntervalInSeconds": 30,
-#                     "secureOutput": "false",
-#                     "secureInput": "false"
-#                 },
-#                 "connectionSettings": {
-#                     "name": "sqldatabase",
-#                     "properties": {
-#                         "annotations": [],
-#                         "type": "FabricSqlDatabase",
-#                         "typeProperties": {
-#                             "workspaceId": workspaceId,
-#                             "artifactId": sqldb_id
-#                         },
-#                         "externalReferences": {
-#                             "connection": sqldb_connection_id 
-#                         }
-#                     }
-#                 },
-#                 "typeProperties": {
-#                     "scripts": [
-#                         {
-#                             "type": "Query",
-#                             "text": {
-#                                 "value": sql_query_str,
-#                                 "type": "Expression"
-#                             }
-#                         }
-#                     ],
-#                     "scriptBlockExecutionTimeout": "02:00:00"
-#                 }
-#             }
-#         ]
-#     }
-# }
+# load data    
+fabric_headers = get_fabric_headers()
+import os
+folder_path = 'sql_files'
 
-# import base64
+for filename in os.listdir(folder_path):
+    file_path = os.path.join(folder_path, filename)
 
-# pipeline_base64 = base64.b64encode(json.dumps(pipeline_json).encode('utf-8'))
+    # Skip directories, process only files
+    if os.path.isfile(file_path):
+        print(f"Processing file: {filename}")
 
-# pipeline_data = {
-#         "displayName":pipeline_name,
-#         "type":"DataPipeline",
-#         "definition" : {
-#             # "format": "json",
-#             "parts": [
-#                 {
-#                     "path": "pipeline-content.json",
-#                     "payload": pipeline_base64.decode('utf-8'),
-#                     "payloadType": "InlineBase64"
-#                 }
-#             ]
-#         }
-#     }
-
-# pipeline_response = requests.post(fabric_items_url, headers=fabric_headers, json=pipeline_data)
-# # print('pipeline response: ',pipeline_response.json())
-
-
-# pipeline_id = pipeline_response.json()['id']
-
-# fabric_headers = get_fabric_headers()
-
-# # run the pipeline once
-# job_url = fabric_base_url + f"items/{pipeline_id}/jobs/instances?jobType=Pipeline"
-# job_response = requests.post(job_url, headers=fabric_headers)
-# # print(job_response)
-
-# if job_response.status_code == 202:
-#     print("pipeline run accepted with status 202")
     
-#     retry_url = job_response.headers.get("Location")
+    sql_filepath = file_path #'data_sql.sql'
+    with open(sql_filepath, 'r', encoding='utf-8') as f:
+        sql_query_str = f.read()
 
-#     # wait_seconds = 20
-#     wait_seconds = int(job_response.headers.get("Retry-After"))
-#     attempt = 1
-#     status = ''
-#     while (status != 'Completed') and (status != 'Failed'):
-#         print(f"Polling attempt {attempt}...")
-#         time.sleep(wait_seconds)
-#         retry_response = requests.get(retry_url, headers=fabric_headers)
-#         # print(retry_response.json())
-#         # wait_seconds = int(retry_response.headers.get("Retry-After"))
-#         status = retry_response.json()['status']
-#         # print(status)
-#         attempt += 1
+    # create pipeline item
+    pipeline_json = {
+        "name": pipeline_name,
+        "properties": {
+            "activities": [
+                {
+                    "name": "process_data",
+                    "type": "Script",
+                    "dependsOn": [],
+                    "policy": {
+                        "timeout": "0.12:00:00",
+                        "retry": 0,
+                        "retryIntervalInSeconds": 30,
+                        "secureOutput": "false",
+                        "secureInput": "false"
+                    },
+                    "connectionSettings": {
+                        "name": "sqldatabase",
+                        "properties": {
+                            "annotations": [],
+                            "type": "FabricSqlDatabase",
+                            "typeProperties": {
+                                "workspaceId": workspaceId,
+                                "artifactId": sqldb_id
+                            },
+                            "externalReferences": {
+                                "connection": sqldb_connection_id 
+                            }
+                        }
+                    },
+                    "typeProperties": {
+                        "scripts": [
+                            {
+                                "type": "Query",
+                                "text": {
+                                    "value": sql_query_str,
+                                    "type": "Expression"
+                                }
+                            }
+                        ],
+                        "scriptBlockExecutionTimeout": "02:00:00"
+                    }
+                }
+            ]
+        }
+    }
 
-#     print('pipeline run completed',retry_response.json()['status'])
+    import base64
 
-# elif job_response.status_code == 200:
-#     print('pipeline run completed')
-# else:
-#     print(f"pipeline run request failed with status: {job_response.status_code}")
-#     print('pipeline job response: ',job_response.text)
+    pipeline_base64 = base64.b64encode(json.dumps(pipeline_json).encode('utf-8'))
+
+    pipeline_data = {
+            "displayName":pipeline_name,
+            "type":"DataPipeline",
+            "definition" : {
+                # "format": "json",
+                "parts": [
+                    {
+                        "path": "pipeline-content.json",
+                        "payload": pipeline_base64.decode('utf-8'),
+                        "payloadType": "InlineBase64"
+                    }
+                ]
+            }
+        }
+
+    pipeline_response = requests.post(fabric_items_url, headers=fabric_headers, json=pipeline_data)
+    # print('pipeline response: ',pipeline_response.json())
+
+
+    pipeline_id = pipeline_response.json()['id']
+
+    fabric_headers = get_fabric_headers()
+
+    # run the pipeline once
+    job_url = fabric_base_url + f"items/{pipeline_id}/jobs/instances?jobType=Pipeline"
+    job_response = requests.post(job_url, headers=fabric_headers)
+    # print(job_response)
+
+    if job_response.status_code == 202:
+        print("pipeline run accepted with status 202")
+        
+        retry_url = job_response.headers.get("Location")
+
+        # wait_seconds = 20
+        wait_seconds = int(job_response.headers.get("Retry-After"))
+        attempt = 1
+        status = ''
+        while (status != 'Completed') and (status != 'Failed'):
+            print(f"Polling attempt {attempt}...")
+            time.sleep(wait_seconds)
+            retry_response = requests.get(retry_url, headers=fabric_headers)
+            # print(retry_response.json())
+            # wait_seconds = int(retry_response.headers.get("Retry-After"))
+            status = retry_response.json()['status']
+            # print(status)
+            attempt += 1
+
+        print('pipeline run completed',retry_response.json()['status'])
+
+    elif job_response.status_code == 200:
+        print('pipeline run completed')
+    else:
+        print(f"pipeline run request failed with status: {job_response.status_code}")
+        print('pipeline job response: ',job_response.text)
 
 
 #create role assignments
