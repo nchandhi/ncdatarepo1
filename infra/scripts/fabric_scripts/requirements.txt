@@ -1,1 +1,1 @@
-azure-identity
+azure-identity==1.23.0

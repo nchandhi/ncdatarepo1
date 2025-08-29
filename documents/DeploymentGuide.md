@@ -8,12 +8,10 @@ Check the [Azure Products by Region](https://azure.microsoft.com/en-us/explore/g
 
 - [Microsoft Fabric](https://learn.microsoft.com/en-us/fabric/)
 - [Azure AI Foundry](https://learn.microsoft.com/en-us/azure/ai-foundry)
-- [Azure OpenAI Service](https://learn.microsoft.com/en-us/azure/ai-services/openai/)
 - [GPT Model Capacity](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models)
 - [Azure Container Apps](https://learn.microsoft.com/en-us/azure/container-apps/)
 - [Azure Container Registry](https://learn.microsoft.com/en-us/azure/container-registry/)
-- [Embedding Deployment Capacity](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models#embedding-models)
-- [Azure Semantic Search](./AzureSemanticSearchRegion.md)
+<!-- - [Embedding Deployment Capacity](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models#embedding-models) -->
 
 Here are some example regions where the services are available: East US, East US2, Australia East, UK South, France Central.
 
@@ -30,7 +28,8 @@ This will allow the scripts to run for the current session without permanently c
 ## Deployment Options & Steps
 ###  Fabric Deployment 
 <!-- if you have an existing workspace use this Id -->
-1. Follow the steps in [Fabric Deployment](./Fabric_deployment.md) to create a Fabric workspace and deploy Fabric resources
+1. Follow the steps in [Fabric Deployment](./Fabric_deployment.md) to create a Fabric workspace
+
 Pick from the options below to see step-by-step instructions for GitHub Codespaces, VS Code Dev Containers, Local Environments, and Bicep deployments.
 
 | [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/microsoft/Conversation-Knowledge-Mining-Solution-Accelerator) | [![Open in Dev Containers](https://img.shields.io/static/v1?style=for-the-badge&label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/microsoft/Conversation-Knowledge-Mining-Solution-Accelerator) | 
@@ -108,15 +107,13 @@ When you start the deployment, most parameters will have **default values**, but
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------- |
 | **Azure Region**                            | The region where resources will be created.                                                               | *(empty)*              |
 | **Environment Name**                        | A **3–20 character alphanumeric value** used to generate a unique ID to prefix the resources.             | env\_name              |
-| **Azure AI Content Understanding Location** | Region for content understanding resources.                                                               | swedencentral          |
-| **Secondary Location**                      | A **less busy** region for **Azure SQL and Azure Cosmos DB**, useful in case of availability constraints. | eastus2                |
 | **Deployment Type**                         | Select from a drop-down list (allowed: `Standard`, `GlobalStandard`).                                     | GlobalStandard         |
 | **GPT Model**                               | Choose from **gpt-4, gpt-4o, gpt-4o-mini**.                                                               | gpt-4o-mini            |
 | **GPT Model Version**                       | The version of the selected GPT model.                                                                    | 2024-07-18             |
 | **OpenAI API Version**                      | The Azure OpenAI API version to use.                                                                      | 2025-01-01-preview     |
 | **GPT Model Deployment Capacity**           | Configure capacity for **GPT models** (in thousands).                                                     | 30k                    |
-| **Embedding Model**                         | Default: **text-embedding-ada-002**.                                                                      | text-embedding-ada-002 |
-| **Embedding Model Capacity**                | Set the capacity for **embedding models** (in thousands).                                                 | 80k                    |
+<!-- | **Embedding Model**                         | Default: **text-embedding-ada-002**.                                                                      | text-embedding-ada-002 |
+| **Embedding Model Capacity**                | Set the capacity for **embedding models** (in thousands).                                                 | 80k                    | -->
 | **Image Tag**                               | Docker image tag to deploy. Common values: `latest`, `dev`, `hotfix`.                  | latest       |
 | **Use Local Build**                         | Boolean flag to determine if local container builds should be used.                         | false             |
 | **Existing Log Analytics Workspace**        | To reuse an existing Log Analytics Workspace ID.                                                          | *(empty)*              |
@@ -180,9 +177,37 @@ Once you've opened the project in [Codespaces](#github-codespaces), [Dev Contain
     -- This deployment will take *7-10 minutes* to provision the resources in your account and set up the solution with sample data.
     - If you encounter an error or timeout during deployment, changing the location may help, as there could be availability constraints for the resources.
 
-5. Once the deployment has completed successfully, open the [Azure Portal](https://portal.azure.com/), go to the deployed resource group, find the App Service, and get the app URL from `Default domain`.
+5. Once the deployment has completed successfully, copy the bash script from the terminal (ex. `sh ./run_fabric_items_scripts.sh <fabric-workspaceId> <solutionname> <backend-api-mid-principal> <backend-api-name> <resourcegroup>`) and open the [Azure Portal](https://portal.azure.com/). In the Azure portal, open the Azure Cloud Shell and run the following commands:
 
-6. If you are done trying out the application, you can delete the resources by running `azd down`.
+6. Clone the GitHub repository
+  
+  ```shell
+  git clone
+  ```
+
+7. Login to Azure 
+  ```shell
+  az login
+  ```
+
+8. Navigate to the fabric_scripts folder
+  ```shell
+  cd infra/scripts/fabric_scripts
+  ```
+
+9. Install the requirements
+  ```shell 
+  pip install azure-identity --user 
+  ```
+
+10. Run the bash script from the output of the azd deployment. Replace the <fabric-workspaceId> with your Fabric workspace Id created in the previous steps. The script will look like the following:
+  ```Shell
+  sh ./run_fabric_items_scripts.sh <fabric-workspaceId> <solutionname> <backend-api-mid-principal> <backend-api-name> <resourcegroup>
+  ```
+
+11. Once the script has run successfully, go to the deployed resource group, find the App Service, and get the app URL from `Default domain`.
+
+12. If you are done trying out the application, you can delete the resources by running `azd down`.
 
 
 ## Post Deployment Steps
