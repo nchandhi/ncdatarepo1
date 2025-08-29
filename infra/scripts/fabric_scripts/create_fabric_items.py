@@ -171,116 +171,115 @@ for filename in os.listdir(folder_path):
     if os.path.isfile(file_path):
         print(f"Processing file: {filename}")
 
-    
-    sql_filepath = file_path #'data_sql.sql'
-    with open(sql_filepath, 'r', encoding='utf-8') as f:
-        sql_query_str = f.read()
+        sql_filepath = file_path #'data_sql.sql'
+        with open(sql_filepath, 'r', encoding='utf-8') as f:
+            sql_query_str = f.read()
 
-    # create pipeline item
-    pipeline_json = {
-        "name": pipeline_name,
-        "properties": {
-            "activities": [
-                {
-                    "name": "process_data",
-                    "type": "Script",
-                    "dependsOn": [],
-                    "policy": {
-                        "timeout": "0.12:00:00",
-                        "retry": 0,
-                        "retryIntervalInSeconds": 30,
-                        "secureOutput": "false",
-                        "secureInput": "false"
-                    },
-                    "connectionSettings": {
-                        "name": "sqldatabase",
-                        "properties": {
-                            "annotations": [],
-                            "type": "FabricSqlDatabase",
-                            "typeProperties": {
-                                "workspaceId": workspaceId,
-                                "artifactId": sqldb_id
-                            },
-                            "externalReferences": {
-                                "connection": sqldb_connection_id 
-                            }
-                        }
-                    },
-                    "typeProperties": {
-                        "scripts": [
-                            {
-                                "type": "Query",
-                                "text": {
-                                    "value": sql_query_str,
-                                    "type": "Expression"
+        # create pipeline item
+        pipeline_json = {
+            "name": pipeline_name,
+            "properties": {
+                "activities": [
+                    {
+                        "name": "process_data",
+                        "type": "Script",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": "false",
+                            "secureInput": "false"
+                        },
+                        "connectionSettings": {
+                            "name": "sqldatabase",
+                            "properties": {
+                                "annotations": [],
+                                "type": "FabricSqlDatabase",
+                                "typeProperties": {
+                                    "workspaceId": workspaceId,
+                                    "artifactId": sqldb_id
+                                },
+                                "externalReferences": {
+                                    "connection": sqldb_connection_id 
                                 }
                             }
-                        ],
-                        "scriptBlockExecutionTimeout": "02:00:00"
-                    }
-                }
-            ]
-        }
-    }
-
-    import base64
-
-    pipeline_base64 = base64.b64encode(json.dumps(pipeline_json).encode('utf-8'))
-
-    pipeline_data = {
-            "displayName":pipeline_name,
-            "type":"DataPipeline",
-            "definition" : {
-                # "format": "json",
-                "parts": [
-                    {
-                        "path": "pipeline-content.json",
-                        "payload": pipeline_base64.decode('utf-8'),
-                        "payloadType": "InlineBase64"
+                        },
+                        "typeProperties": {
+                            "scripts": [
+                                {
+                                    "type": "Query",
+                                    "text": {
+                                        "value": sql_query_str,
+                                        "type": "Expression"
+                                    }
+                                }
+                            ],
+                            "scriptBlockExecutionTimeout": "02:00:00"
+                        }
                     }
                 ]
             }
         }
 
-    pipeline_response = requests.post(fabric_items_url, headers=fabric_headers, json=pipeline_data)
-    # print('pipeline response: ',pipeline_response.json())
+        import base64
+
+        pipeline_base64 = base64.b64encode(json.dumps(pipeline_json).encode('utf-8'))
+
+        pipeline_data = {
+                "displayName":pipeline_name,
+                "type":"DataPipeline",
+                "definition" : {
+                    # "format": "json",
+                    "parts": [
+                        {
+                            "path": "pipeline-content.json",
+                            "payload": pipeline_base64.decode('utf-8'),
+                            "payloadType": "InlineBase64"
+                        }
+                    ]
+                }
+            }
+
+        pipeline_response = requests.post(fabric_items_url, headers=fabric_headers, json=pipeline_data)
+        # print('pipeline response: ',pipeline_response.json())
 
 
-    pipeline_id = pipeline_response.json()['id']
+        pipeline_id = pipeline_response.json()['id']
 
-    fabric_headers = get_fabric_headers()
+        fabric_headers = get_fabric_headers()
 
-    # run the pipeline once
-    job_url = fabric_base_url + f"items/{pipeline_id}/jobs/instances?jobType=Pipeline"
-    job_response = requests.post(job_url, headers=fabric_headers)
-    # print(job_response)
+        # run the pipeline once
+        job_url = fabric_base_url + f"items/{pipeline_id}/jobs/instances?jobType=Pipeline"
+        job_response = requests.post(job_url, headers=fabric_headers)
+        # print(job_response)
 
-    if job_response.status_code == 202:
-        print("pipeline run accepted with status 202")
-        
-        retry_url = job_response.headers.get("Location")
+        if job_response.status_code == 202:
+            print("pipeline run accepted with status 202")
+            
+            retry_url = job_response.headers.get("Location")
 
-        # wait_seconds = 20
-        wait_seconds = int(job_response.headers.get("Retry-After"))
-        attempt = 1
-        status = ''
-        while (status != 'Completed') and (status != 'Failed'):
-            print(f"Polling attempt {attempt}...")
-            time.sleep(wait_seconds)
-            retry_response = requests.get(retry_url, headers=fabric_headers)
-            # print(retry_response.json())
-            # wait_seconds = int(retry_response.headers.get("Retry-After"))
-            status = retry_response.json()['status']
-            # print(status)
-            attempt += 1
+            # wait_seconds = 20
+            wait_seconds = int(job_response.headers.get("Retry-After"))
+            attempt = 1
+            status = ''
+            while (status != 'Completed') and (status != 'Failed'):
+                print(f"Polling attempt {attempt}...")
+                time.sleep(wait_seconds)
+                retry_response = requests.get(retry_url, headers=fabric_headers)
+                # print(retry_response.json())
+                # wait_seconds = int(retry_response.headers.get("Retry-After"))
+                status = retry_response.json()['status']
+                # print(status)
+                attempt += 1
 
-        print('pipeline run completed',retry_response.json()['status'])
+            print('pipeline run completed',retry_response.json()['status'])
 
-    elif job_response.status_code == 200:
-        print('pipeline run completed')
-    else:
-        print(f"pipeline run request failed with status: {job_response.status_code}")
-        print('pipeline job response: ',job_response.text)
+        elif job_response.status_code == 200:
+            print('pipeline run completed')
+        else:
+            print(f"pipeline run request failed with status: {job_response.status_code}")
+            print('pipeline job response: ',job_response.text)
 
 
 #create role assignments
