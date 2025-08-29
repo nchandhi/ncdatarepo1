@@ -28,7 +28,7 @@ hooks:
         $resourceGroup         = $env:RESOURCE_GROUP_NAME
 
         # Build the exact command string (quoted to survive spaces)
-        $cmdLine = 'sh ./run_fabric_items_scripts.sh {0} {1} {2} {3} {4} {5}' -f `
+        $cmdLine = 'sh ./run_fabric_items_scripts.sh {0} {1} {2} {3} {4} {5} {6}' -f `
             $workspaceId, $solutionName, $aiServiceName, $backendApiPID, $backendApiUID, $backendApiName, $resourceGroup
 
         Write-Host $cmdLine -ForegroundColor Cyan   
