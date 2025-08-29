@@ -82,6 +82,7 @@ If you're not using one of the above options for opening the project, then you'l
     - [Python 3.9+](https://www.python.org/downloads/)
     - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
     - [Git](https://git-scm.com/downloads)
+    - [Microsoft ODBC Driver 17](https://learn.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server?view=sql-server-ver16#version-17)
 
 2. Clone the repository or download the project code via command-line:
 
@@ -172,17 +173,18 @@ Once you've opened the project in [Codespaces](#github-codespaces), [Dev Contain
     azd up
     ```
 
-3. Provide an `azd` environment name (e.g., "ckmapp").
+3. Provide an `azd` environment name (e.g., "daapp").
 4. Select a subscription from your Azure account and choose a location that has quota for all the resources. 
     -- This deployment will take *7-10 minutes* to provision the resources in your account and set up the solution with sample data.
     - If you encounter an error or timeout during deployment, changing the location may help, as there could be availability constraints for the resources.
 
 5. Once the deployment has completed successfully, copy the bash script from the terminal (ex. `sh ./run_fabric_items_scripts.sh <fabric-workspaceId> <solutionname> <backend-api-mid-principal> <backend-api-name> <resourcegroup>`) and open the [Azure Portal](https://portal.azure.com/). In the Azure portal, open the Azure Cloud Shell and run the following commands:
 
-6. Clone the GitHub repository
+6. Create and activate a virtual environment 
   
   ```shell
-  git clone
+  python -m venv .venv
+  .venv\Scripts\activate
   ```
 
 7. Login to Azure 
@@ -190,24 +192,19 @@ Once you've opened the project in [Codespaces](#github-codespaces), [Dev Contain
   az login
   ```
 
-8. Navigate to the fabric_scripts folder
+8. Open a Git Bash terminal and navigate to the fabric_scripts folder
   ```shell
   cd infra/scripts/fabric_scripts
   ```
 
-9. Install the requirements
-  ```shell 
-  pip install azure-identity --user 
-  ```
-
-10. Run the bash script from the output of the azd deployment. Replace the <fabric-workspaceId> with your Fabric workspace Id created in the previous steps. The script will look like the following:
+9. Run the bash script from the output of the azd deployment. Replace the <fabric-workspaceId> with your Fabric workspace Id created in the previous steps. The script will look like the following:
   ```Shell
   sh ./run_fabric_items_scripts.sh <fabric-workspaceId> <solutionname> <backend-api-mid-principal> <backend-api-name> <resourcegroup>
   ```
 
-11. Once the script has run successfully, go to the deployed resource group, find the App Service, and get the app URL from `Default domain`.
+10. Once the script has run successfully, go to the deployed resource group, find the App Service, and get the app URL from `Default domain`.
 
-12. If you are done trying out the application, you can delete the resources by running `azd down`.
+11. If you are done trying out the application, you can delete the resources by running `azd down`.
 
 
 ## Post Deployment Steps
