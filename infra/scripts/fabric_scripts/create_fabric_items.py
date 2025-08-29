@@ -227,7 +227,7 @@ for filename in os.listdir(folder_path):
         pipeline_base64 = base64.b64encode(json.dumps(pipeline_json).encode('utf-8'))
 
         pipeline_data = {
-                "displayName":pipeline_name,
+                "displayName":(pipeline_name + filename.replace('.sql', '')),
                 "type":"DataPipeline",
                 "definition" : {
                     # "format": "json",
