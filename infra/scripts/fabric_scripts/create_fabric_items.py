@@ -177,7 +177,7 @@ for filename in os.listdir(folder_path):
 
         # create pipeline item
         pipeline_json = {
-            "name": pipeline_name,
+            "name": (pipeline_name + filename.replace('.sql', '')),
             "properties": {
                 "activities": [
                     {
