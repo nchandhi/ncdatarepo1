@@ -19,8 +19,7 @@ from chat import router as chat_router
 from history import router as history_router
 from history_sql import router as history_sql_router
 from semantic_kernel.agents import AzureAIAgent, AzureAIAgentSettings
-from azure.identity.aio import DefaultAzureCredential
-
+from auth.azure_credential_utils import get_azure_credential_async
 load_dotenv()
 
 
@@ -36,7 +35,7 @@ async def lifespan(fastapi_app: FastAPI):
 
     ai_agent_settings = AzureAIAgentSettings(endpoint=os.getenv("AZURE_AI_AGENT_ENDPOINT"))
     client =  AzureAIAgent.create_client(
-        credential=DefaultAzureCredential(),
+        credential=await get_azure_credential_async(),
         endpoint=ai_agent_settings.endpoint,
     )
     agent = await client.agents.get_agent(

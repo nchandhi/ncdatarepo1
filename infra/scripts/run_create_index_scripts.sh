@@ -23,6 +23,7 @@ apk add --allow-untrusted mssql-tools_17.10.1.1-1_amd64.apk
 
 # Step 2: Download index scripts
 echo "Downloading index scripts..."
+curl --output "azure_credential_utils.py" "${baseUrl}infra/scripts/azure_credential_utils.py"
 curl --output "01_create_search_index.py" "${baseUrl}infra/scripts/index_scripts/01_create_search_index.py"
 curl --output "02_create_cu_template_text.py" "${baseUrl}infra/scripts/index_scripts/02_create_cu_template_text.py"
 curl --output "02_create_cu_template_audio.py" "${baseUrl}infra/scripts/index_scripts/02_create_cu_template_audio.py"

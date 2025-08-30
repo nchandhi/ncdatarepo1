@@ -1,8 +1,6 @@
-from azure.identity import DefaultAzureCredential
 import requests
 import time
 import json
-# credential = DefaultAzureCredential()
 from azure.identity import AzureCliCredential
 import shlex
 import argparse
