@@ -272,7 +272,7 @@ const Dashboard: React.FC = () => {
         <div className="header-left-section">
           <AppLogo />
           <Subtitle2>
-            Woodgrove <Body2 style={{ gap: "10px" }}>| Call Analysis</Body2>
+            Contoso <Body2 style={{ gap: "10px" }}>| Unified Data Analysis Agents</Body2>
           </Subtitle2>
         </div>
         <div className="header-right-section">
