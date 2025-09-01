@@ -345,6 +345,16 @@ async def get_conversation_messages(user_id: str, conversation_id: str):
                     processed_message["citations"] = []
             else:
                 processed_message["citations"] = []
+
+            # Deserialize content if it's a JSON string
+            content = processed_message.get("content")
+            if isinstance(content, str):
+                try:
+                    # Try to parse as JSON
+                    processed_message["content"] = json.loads(content)
+                except (json.JSONDecodeError, TypeError):
+                    # Leave as string if not JSON
+                    processed_message["content"] = content
             processed_result.append(processed_message)
 
         return processed_result
@@ -652,8 +662,12 @@ async def create_message(uuid, conversation_id, user_id, input_message: dict):
             "updatedAt"
             ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
         )
+        content = input_message["content"]
+        if isinstance(content, dict):
+            content = json.dumps(content)
+            print(content)
         params = (user_id, conversation_id, input_message["role"], input_message["id"],
-                  input_message["content"], citations_json, feedback, utc_now, utc_now)
+                  content, citations_json, feedback, utc_now, utc_now)
         resp = await run_nonquery_params(query, params)
         
         if resp:
@@ -664,6 +678,7 @@ async def create_message(uuid, conversation_id, user_id, input_message: dict):
             return resp
         else:
             return False
+        
     except Exception:
         logger.exception("Error in create_message")
         raise

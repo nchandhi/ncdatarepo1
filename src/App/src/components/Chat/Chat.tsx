@@ -129,8 +129,13 @@ const Chat: React.FC<ChatProps> = ({
   };
   const isChartQuery = (query: string) => {
     const chartKeywords = ["chart", "graph", "visualize", "plot"];
-    return chartKeywords.some((keyword) =>
-      query.toLowerCase().includes(keyword)
+    
+    // Convert to lowercase for case-insensitive matching
+    const lowerCaseQuery = query.toLowerCase();
+    
+    // Use word boundary regex to match whole words only
+    return chartKeywords.some(keyword => 
+      new RegExp(`\\b${keyword}\\b`).test(lowerCaseQuery)
     );
   };
 
