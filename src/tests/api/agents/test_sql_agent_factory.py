@@ -12,7 +12,7 @@ def reset_sql_agent_factory():
 
 
 @pytest.mark.asyncio
-@patch("agents.sql_agent_factory.DefaultAzureCredential", autospec=True)
+@patch("agents.sql_agent_factory.get_azure_credential", autospec=True)
 @patch("agents.sql_agent_factory.AIProjectClient", autospec=True)
 async def test_create_agent_creates_new_instance(
     mock_ai_client_cls,

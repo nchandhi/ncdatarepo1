@@ -26,8 +26,6 @@ from opentelemetry.trace import Status, StatusCode
 
 # Azure SDK
 from azure.ai.agents.models import TruncationObject, MessageRole, ListSortOrder
-from azure.identity import DefaultAzureCredential
-from azure.identity.aio import DefaultAzureCredential as AsyncDefaultAzureCredential
 from azure.monitor.events.extension import track_event
 from azure.monitor.opentelemetry import configure_azure_monitor
 from azure.ai.projects import AIProjectClient
@@ -36,6 +34,9 @@ from azure.ai.projects import AIProjectClient
 from semantic_kernel.agents import AzureAIAgentThread
 from semantic_kernel.exceptions.agent_exceptions import AgentException
 from semantic_kernel.functions.kernel_function_decorator import kernel_function
+
+# Azure Auth
+from auth.azure_credential_utils import get_azure_credential, get_azure_credential_async
 
 load_dotenv()
 
@@ -104,7 +105,7 @@ class ChatWithDataPlugin:
             from history_sql import execute_sql_query
             project_client = AIProjectClient(
                 endpoint=self.ai_project_endpoint,
-                credential=DefaultAzureCredential(exclude_interactive_browser_credential=False),
+                credential=get_azure_credential(),
                 api_version=self.ai_project_api_version,
             )
            
@@ -155,7 +156,7 @@ class ChatWithDataPlugin:
         try:
             project_client = AIProjectClient(
                 endpoint=self.ai_project_endpoint,
-                credential=DefaultAzureCredential(exclude_interactive_browser_credential=False),
+                credential=get_azure_credential(),
                 api_version=self.ai_project_api_version,
             )
 
@@ -654,7 +655,7 @@ async def fetch_azure_search_content_endpoint(request: Request):
             return JSONResponse(content={"error": "URL is required"}, status_code=400)
 
         # Get Azure AD token
-        credential = AsyncDefaultAzureCredential()
+        credential = get_azure_credential_async()
         token = await credential.get_token("https://search.azure.com/.default")
         access_token = token.token
 
