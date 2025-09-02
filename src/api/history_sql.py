@@ -307,7 +307,7 @@ async def get_conversations(user_id, limit, sort_order="DESC", offset=0):
         raise
 
 
-async def get_conversation_messages(user_id: str, conversation_id: str):
+async def get_conversation_messages(user_id: str, conversation_id: str, sort_order="ASC"):
     """
     Retrieve all messages for a specific conversation.
 
@@ -326,10 +326,10 @@ async def get_conversation_messages(user_id: str, conversation_id: str):
         query = ""
         params = ()
         if user_id:
-            query = "SELECT role, content, citations, feedback FROM hst_conversation_messages where userId = ? and conversation_id = ?"
+            query = f"SELECT role, content, citations, feedback FROM hst_conversation_messages where userId = ? and conversation_id = ? order by updatedAt {sort_order}"
             params = (user_id, conversation_id)
         else:  # If no user_id is provided, return all conversation messages -- This is for local testing purposes
-            query = "SELECT role, content, citations, feedback FROM hst_conversation_messages where conversation_id = ?"
+            query = f"SELECT role, content, citations, feedback FROM hst_conversation_messages where conversation_id = ? order by updatedAt {sort_order}"
             params = (conversation_id,)
 
         result = await run_query_params(query, params)
