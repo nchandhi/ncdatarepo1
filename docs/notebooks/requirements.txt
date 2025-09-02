@@ -1,0 +1,6 @@
+semantic-kernel[azure]==1.32.2
+openai==1.93.0
+pyodbc==5.2.0
+azure-identity==1.23.0
+ipykernel==6.29.5
+python-dotenv==1.1.0
