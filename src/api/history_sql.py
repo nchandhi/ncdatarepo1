@@ -8,7 +8,7 @@ from typing import Tuple, Any
 
 from openai import AsyncAzureOpenAI
 import pyodbc
-from azure.identity.aio import AzureCliCredential, DefaultAzureCredential, get_bearer_token_provider
+from azure.identity.aio import AzureCliCredential, get_bearer_token_provider
 from azure.monitor.events.extension import track_event
 from azure.monitor.opentelemetry import configure_azure_monitor
 from fastapi import APIRouter, HTTPException, Query, Request, status
@@ -17,6 +17,7 @@ from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
 
 from auth.auth_utils import get_authenticated_user_details
+from auth.azure_credential_utils import get_azure_credential_async
 
 router = APIRouter()
 
@@ -495,7 +496,7 @@ async def rename_conversation(user_id: str, conversation_id, title) -> bool:
         return False
 
 
-def init_openai_client():
+async def init_openai_client():
     """
     Initialize and return an Azure OpenAI client.
 
@@ -513,8 +514,9 @@ def init_openai_client():
         ad_token_provider = None
 
         logger.debug("Using Azure AD authentication for OpenAI")
+        credential = await get_azure_credential_async()
         ad_token_provider = get_bearer_token_provider(
-            DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
+            credential, "https://cognitiveservices.azure.com/.default")
 
         if not AZURE_OPENAI_DEPLOYMENT_MODEL:
             raise ValueError("AZURE_OPENAI_MODEL is required")
@@ -551,7 +553,7 @@ async def generate_title(conversation_messages):
     messages.append({"role": "user", "content": title_prompt})
 
     try:
-        azure_openai_client = init_openai_client()
+        azure_openai_client = await init_openai_client()
         response = await azure_openai_client.chat.completions.create(
             model=AZURE_OPENAI_DEPLOYMENT_MODEL,
             messages=messages,

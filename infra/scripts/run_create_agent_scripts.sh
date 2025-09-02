@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "Started the index script setup..."
+echo "Started the agent creation script setup..."
 
 # Variables
 baseUrl="$1"
@@ -13,6 +13,7 @@ requirementFile="requirements.txt"
 requirementFileUrl="${baseUrl}infra/scripts/agent_scripts/requirements.txt"
 
 echo "Downloading files..."
+curl --output "azure_credential_utils.py" "${baseUrl}infra/scripts/azure_credential_utils.py"
 curl --output "01_create_agents.py" "${baseUrl}infra/scripts/agent_scripts/01_create_agents.py"
 
 # Download and install Python requirements
@@ -33,6 +34,7 @@ echo "Running Python agent scripts..."
 agentIds=$(python 01_create_agents.py)
 
 echo "agent creation completed."
+echo "agentIds: $agentIds"
 
 # write outputs for Bicep
 printf '%s' "$agentIds" > "$AZ_SCRIPTS_OUTPUT_PATH"
