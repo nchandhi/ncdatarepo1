@@ -1,2 +1,2 @@
-azure-identity
-azure-ai-projects
+azure-identity==1.23.0
+azure-ai-projects==1.0.0b12
