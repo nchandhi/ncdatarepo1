@@ -37,9 +37,10 @@ with open(file_path, "r", encoding="utf-8") as f:
 
 counter = 1
 insr_str = ''
+tables_str = ''
 for table in data['tables']:
 
-    tables_str += f"\n {counter}.Table:dbo.{table['tablenames']}\n        Columns: " + ', '.join(table['columns'])
+    tables_str += f"\n {counter}.Table:dbo.{table['tablename']}\n        Columns: " + ', '.join(table['columns'])
     counter += 1
 # print(tables_str)
 
