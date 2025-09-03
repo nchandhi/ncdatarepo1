@@ -87,15 +87,15 @@ var acrName = 'dataagentscontainerreg'
 
 var baseUrl = 'https://raw.githubusercontent.com/nchandhi/ncdatarepo1/main/'
 
-// ========== Resource Group Tag ========== //
-resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = {
-  name: 'default'
-  properties: {
-    tags: {
-      TemplateName: 'Data Agents Fabric'
-    }
-  }
-}
+// // ========== Resource Group Tag ========== //
+// resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = {
+//   name: 'default'
+//   properties: {
+//     tags: {
+//       TemplateName: 'Data Agents Fabric'
+//     }
+//   }
+// }
 
 // ========== Managed Identity ========== //
 module managedIdentityModule 'deploy_managed_identity.bicep' = {
