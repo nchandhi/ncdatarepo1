@@ -1,4 +1,3 @@
-from azure.identity import DefaultAzureCredential
 import base64
 import json
 import requests
@@ -9,7 +8,6 @@ import zipfile
 import time
 
 
-# credential = DefaultAzureCredential()
 from azure.identity import AzureCliCredential
 credential = AzureCliCredential()
 
