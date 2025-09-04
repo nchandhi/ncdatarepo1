@@ -381,10 +381,6 @@ async def delete_conversation(user_id: str, conversation_id: str) -> bool:
             logger.warning("No conversation_id found, cannot delete conversation.")
             return False
 
-        if user_id is None:
-            logger.warning("User ID is None, cannot delete conversation %s.", conversation_id)
-            return False
-
         query = "SELECT userId, conversation_id FROM hst_conversations where conversation_id = ?"
         conversation = await run_query_params(query, (conversation_id,))        
         if not conversation or len(conversation) == 0:
@@ -392,19 +388,30 @@ async def delete_conversation(user_id: str, conversation_id: str) -> bool:
             return False
 
         # If the userId in the conversation does not match the user_id, deny access
-        if conversation and conversation[0]["userId"] != user_id:
+        if user_id and conversation and conversation[0]["userId"] != user_id:
             logger.warning(
                 "User %s does not have permission to delete %s.", user_id, conversation_id)
             return False
-        # Prepare parameters for deletion
-        params = (user_id, conversation_id)
-        # Delete associated messages first (if applicable)
-        query_m = "DELETE FROM hst_conversation_messages where userId = ?  and conversation_id = ?"
-        await run_nonquery_params(query_m, params)
+        
+        if user_id:
+            # Prepare parameters for deletion
+            params = (user_id, conversation_id)
+            # Delete associated messages first (if applicable)
+            query_m = "DELETE FROM hst_conversation_messages where userId = ?  and conversation_id = ?"
+            await run_nonquery_params(query_m, params)
 
-        # Delete the conversation itself
-        query_m = "DELETE FROM hst_conversations where userId = ?  and conversation_id = ?"
-        await run_nonquery_params(query_m, params)
+            # Delete the conversation itself
+            query_m = "DELETE FROM hst_conversations where userId = ?  and conversation_id = ?"
+            await run_nonquery_params(query_m, params)
+        else:
+            params = (conversation_id)
+            # Delete associated messages first (if applicable)
+            query_m = "DELETE FROM hst_conversation_messages where conversation_id = ?"
+            await run_nonquery_params(query_m, params)
+
+            # Delete the conversation itself
+            query_c = "DELETE FROM hst_conversations where conversation_id = ?"
+            await run_nonquery_params(query_c, params)
 
         return True
 
@@ -424,17 +431,22 @@ async def delete_all_conversations(user_id: str) -> bool:
         bool: True if all conversations were successfully deleted, False otherwise.
     """
     try:
-        if user_id is None:
-            logger.warning("User ID is None, cannot delete conversations.")
-            return False
+        
+        if user_id:
+            # Delete all associated messages
+            query_m = "DELETE FROM hst_conversation_messages WHERE userId = ?"
+            messages_result = await run_nonquery_params(query_m, (user_id,))
 
-        # Delete all associated messages
-        query_m = "DELETE FROM hst_conversation_messages WHERE userId = ?"
-        messages_result = await run_nonquery_params(query_m, (user_id,))
+            # Delete all conversations
+            query_c = "DELETE FROM hst_conversations WHERE userId = ?"
+            conversations_result = await run_nonquery_params(query_c, (user_id,))
+        else:
+            # If user_id is None, delete all conversations without user filtering
+            query_m = "DELETE FROM hst_conversation_messages"
+            messages_result = await run_nonquery_params(query_m)
 
-        # Delete all conversations
-        query_c = "DELETE FROM hst_conversations WHERE userId = ?"
-        conversations_result = await run_nonquery_params(query_c, (user_id,))
+            query_c = "DELETE FROM hst_conversations"
+            conversations_result = await run_nonquery_params(query_c)
 
         # Verify deletion was successful
         if messages_result is False or conversations_result is False:
@@ -464,10 +476,6 @@ async def rename_conversation(user_id: str, conversation_id, title) -> bool:
         if not conversation_id:
             raise ValueError("No conversation_id found")
 
-        if user_id is None:
-            logger.warning("User ID is None, cannot rename title of the conversation %s.", conversation_id)
-            return False
-
         if title is None:
             logger.warning("Title is None, cannot rename title of the conversation %s.", conversation_id)
             return False
@@ -480,15 +488,19 @@ async def rename_conversation(user_id: str, conversation_id, title) -> bool:
             logger.warning("Conversation %s not found.", conversation_id)
             return False
 
-        # Check if the user has permission to delete it
-        if conversation and conversation[0]["userId"] != user_id:
+        # Check if the user has permission to rename it
+        if user_id and conversation and conversation[0]["userId"] != user_id:
             logger.warning(
-                "User %s does not have permission to delete %s.", user_id, conversation_id)
+                "User %s does not have permission to rename %s.", user_id, conversation_id)
             return False
 
         # Update the title of the conversation
-        query_t = "UPDATE hst_conversations SET title = ? WHERE userId = ?  and conversation_id = ?"
-        await run_nonquery_params(query_t, (title, user_id, conversation_id))
+        if user_id:
+            query_t = "UPDATE hst_conversations SET title = ? WHERE userId = ?  and conversation_id = ?"
+            await run_nonquery_params(query_t, (title, user_id, conversation_id))
+        else:
+            query_t = "UPDATE hst_conversations SET title = ? WHERE conversation_id = ?"
+            await run_nonquery_params(query_t, (title, conversation_id))
 
         return True
     except Exception as e:
@@ -582,9 +594,9 @@ async def create_conversation(user_id, title="", conversation_id=None):
         Exception: If an error occurs during conversation creation.
     """
     try:        
-        if not user_id:
-            logger.warning("No User ID found, cannot create conversation.")
-            return None
+        # if not user_id:
+        #     logger.warning("No User ID found, cannot create conversation.")
+        #     return None
 
         if not conversation_id:
             logger.warning("No conversation_id found, generating a new one.")
@@ -623,9 +635,9 @@ async def create_message(uuid, conversation_id, user_id, input_message: dict):
         Exception: If an error occurs during message creation.
     """
     try:
-        if not user_id:
-            logger.warning("No User ID found, cannot create message.")
-            return None
+        # if not user_id:
+        #     logger.warning("No User ID found, cannot create message.")
+        #     return None
 
         if not conversation_id:
             logger.warning("No conversation_id found, cannot create conversation message.")
@@ -705,9 +717,9 @@ async def update_conversation(user_id: str, request_json: dict):
         conversation_id = request_json.get("conversation_id")
         messages = request_json.get("messages", [])
 
-        if not user_id:
-            logger.warning("No User ID found, cannot update conversation.")
-            return None
+        # if not user_id:
+        #     logger.warning("No User ID found, cannot update conversation.")
+        #     return None
 
         # conversation = None
         query = "SELECT * FROM hst_conversations where conversation_id = ?"
@@ -986,12 +998,12 @@ async def delete_all_conversations_endpoint(request: Request):
             request_headers=request.headers)
         user_id = authenticated_user["user_principal_id"]
 
-        if not user_id:
-            track_event_if_configured("DeleteAllConversationsValidationError", {
-                "error": "user_id is missing",
-                "user_id": user_id
-            })
-            raise HTTPException(status_code=400, detail="user_id is required")
+        # if not user_id:
+        #     track_event_if_configured("DeleteAllConversationsValidationError", {
+        #         "error": "user_id is missing",
+        #         "user_id": user_id
+        #     })
+        #     raise HTTPException(status_code=400, detail="user_id is required")
         # Get all user conversations
         conversations = await get_conversations(user_id, offset=0, limit=None)
         if not conversations:
