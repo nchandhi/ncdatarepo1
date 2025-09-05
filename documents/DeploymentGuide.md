@@ -178,7 +178,7 @@ Once you've opened the project in [Codespaces](#github-codespaces), [Dev Contain
     -- This deployment will take *7-10 minutes* to provision the resources in your account and set up the solution with sample data.
     - If you encounter an error or timeout during deployment, changing the location may help, as there could be availability constraints for the resources.
 
-5. Once the deployment has completed successfully, copy the bash script from the terminal (ex. `sh ./run_fabric_items_scripts.sh <fabric-workspaceId> <solutionname> <backend-api-mid-principal> <backend-api-name> <resourcegroup>`) and open the [Azure Portal](https://portal.azure.com/). In the Azure portal, open the Azure Cloud Shell and run the following commands:
+5. Once the deployment has completed successfully, copy the bash script from the terminal (ex. `bash ./run_fabric_items_scripts.sh <fabric-workspaceId> <solutionname> <backend-api-mid-principal> <backend-api-name> <resourcegroup>`) and open the [Azure Portal](https://portal.azure.com/). In the Azure portal, open the Azure Cloud Shell and run the following commands:
 
 6. Create and activate a virtual environment 
   
@@ -199,7 +199,7 @@ Once you've opened the project in [Codespaces](#github-codespaces), [Dev Contain
 
 9. Run the bash script from the output of the azd deployment. Replace the <fabric-workspaceId> with your Fabric workspace Id created in the previous steps. The script will look like the following:
   ```Shell
-  sh ./run_fabric_items_scripts.sh <fabric-workspaceId> <solutionname> <backend-api-mid-principal> <backend-api-name> <resourcegroup>
+  bash ./run_fabric_items_scripts.sh <fabric-workspaceId> <solutionname> <backend-api-mid-principal> <backend-api-name> <resourcegroup>
   ```
 
 10. Once the script has run successfully, go to the deployed resource group, find the App Service, and get the app URL from `Default domain`.
