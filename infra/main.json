@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.30.23.60470",
-      "templateHash": "1882785947961352040"
+      "templateHash": "8709282446271356089"
     }
   },
   "parameters": {
@@ -358,7 +358,7 @@
     "uniqueId": "[toLower(uniqueString(subscription().id, parameters('environmentName'), variables('solutionLocation')))]",
     "solutionPrefix": "[format('da{0}', padLeft(take(variables('uniqueId'), 12), 12, '0'))]",
     "acrName": "dataagentscontainerreg",
-    "baseUrl": "https://raw.githubusercontent.com/nchandhi/ncdatarepo1/ag_main_0409_test/"
+    "baseUrl": "https://raw.githubusercontent.com/nchandhi/ncdatarepo1/main/"
   },
   "resources": [
     {

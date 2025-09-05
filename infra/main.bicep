@@ -85,7 +85,7 @@ var solutionPrefix = 'da${padLeft(take(uniqueId, 12), 12, '0')}'
 
 var acrName = 'dataagentscontainerreg'
 
-var baseUrl = 'https://raw.githubusercontent.com/nchandhi/ncdatarepo1/ag_main_0409_test/'
+var baseUrl = 'https://raw.githubusercontent.com/nchandhi/ncdatarepo1/main/'
 
 // // ========== Resource Group Tag ========== //
 // resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = {
