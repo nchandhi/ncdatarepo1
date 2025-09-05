@@ -87,6 +87,10 @@ var acrName = 'dataagentscontainerreg'
 
 var baseUrl = 'https://raw.githubusercontent.com/nchandhi/ncdatarepo1/main/'
 
+//Get the current deployer's information
+var deployerInfo = deployer()
+var deployingUserPrincipalId = deployerInfo.objectId
+
 // // ========== Resource Group Tag ========== //
 // resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = {
 //   name: 'default'
@@ -137,7 +141,7 @@ module aifoundry 'deploy_ai_foundry.bicep' = {
     managedIdentityObjectId: managedIdentityModule.outputs.managedIdentityOutput.objectId
     existingLogAnalyticsWorkspaceId: existingLogAnalyticsWorkspaceId
     azureExistingAIProjectResourceId: azureExistingAIProjectResourceId
-
+    deployingUserPrincipalId: deployingUserPrincipalId
   }
   scope: resourceGroup(resourceGroup().name)
 }

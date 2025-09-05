@@ -13,6 +13,7 @@ param embeddingDeploymentCapacity int
 param managedIdentityObjectId string=''
 param existingLogAnalyticsWorkspaceId string = ''
 param azureExistingAIProjectResourceId string = ''
+param deployingUserPrincipalId string = ''
 
 var abbrs = loadJsonContent('./abbreviations.json')
 var aiServicesName = '${abbrs.ai.aiServices}${solutionName}'
@@ -263,6 +264,17 @@ module assignFoundryRoleToMIExisting 'deploy_foundry_role_assignment.bicep' = if
     vnetRules: existing_aiServicesModule.outputs.vnetRules
     ipRules: existing_aiServicesModule.outputs.ipRules
     aiModelDeployments: aiModelDeployments // Pass the model deployments to the module if model not already deployed
+  }
+}
+
+// assign azure ai user role to deployer
+resource assignFoundryRoleToDeployer 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (empty(azureExistingAIProjectResourceId))  {
+  name: guid(resourceGroup().id, aiServices.id, aiUser.id, 'deployer')
+  scope: aiServices
+  properties: {
+    principalId: deployingUserPrincipalId
+    roleDefinitionId: aiUser.id
+    principalType: 'User'
   }
 }
 
