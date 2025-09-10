@@ -753,8 +753,7 @@ const Chat: React.FC<ChatProps> = ({
               <h2>✨</h2>
               <Subtitle2>Start Chatting</Subtitle2>
               <Body1 style={{ textAlign: "center" }}>
-                You can ask questions around customers calls, call topics and
-                call sentiments.
+                You can ask questions around sales, products and orders.
               </Body1>
             </div>
           )}
