@@ -294,10 +294,10 @@ async def get_conversations(user_id, limit, sort_order="DESC", offset=0):
         query = ""
         params = ()
         if user_id:
-            query = f"SELECT conversation_id, title FROM hst_conversations where userId = ? order by updatedAt {sort_order}"
+            query = f"SELECT conversation_id, title, createdAt, updatedAt FROM hst_conversations where userId = ? order by updatedAt {sort_order}"
             params = (user_id,)
         else:  # If no user_id is provided, return all conversations -- This is for local testing purposes
-            query = f"SELECT conversation_id, title FROM hst_conversations ORDER BY updatedAt {sort_order}"
+            query = f"SELECT conversation_id, title, createdAt, updatedAt FROM hst_conversations ORDER BY updatedAt {sort_order}"
             params = ()
 
         result = await run_query_params(query, params)
