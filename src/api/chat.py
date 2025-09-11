@@ -8,14 +8,11 @@ import logging
 import os
 import random
 import re
-import struct
 import time
 import uuid
-from datetime import datetime
 from types import SimpleNamespace
-from typing import Any, Dict, Annotated, AsyncGenerator
+from typing import Annotated, AsyncGenerator
 
-import pyodbc
 import httpx
 from cachetools import TTLCache
 from dotenv import load_dotenv
@@ -74,6 +71,7 @@ logging.getLogger("azure.monitor.opentelemetry.exporter.export._base").setLevel(
     logging.WARNING
 )
 
+
 class ChatWithDataPlugin:
     """Plugin for handling chat interactions with data using various AI agents."""
 
@@ -108,7 +106,7 @@ class ChatWithDataPlugin:
                 credential=get_azure_credential(),
                 api_version=self.ai_project_api_version,
             )
-           
+
             thread = project_client.agents.threads.create()
 
             project_client.agents.messages.create(
@@ -119,7 +117,7 @@ class ChatWithDataPlugin:
 
             run = project_client.agents.runs.create_and_process(
                 thread_id=thread.id,
-                agent_id=self.foundry_sql_agent_id, 
+                agent_id=self.foundry_sql_agent_id,
             )
 
             if run.status == "failed":
@@ -189,7 +187,7 @@ class ChatWithDataPlugin:
         except Exception as e:
             print(f"fabric-Chat-Kernel-error: {e}", flush=True)
             chartdata = 'Details could not be retrieved. Please try again later.'
-        
+
         print(f"fabric-Chat-Kernel-response: {chartdata}", flush=True)
         return chartdata
 
@@ -210,7 +208,7 @@ class ChatWithDataPlugin:
     #     answer: Dict[str, Any] = {"answer": "", "citations": []}
     #     agent = None
 
-    #     try:            
+    #     try:
     #         # Get the fabric agent
     #         print("FABRIC-CustomerSalesKernel", flush=True)
     #         agent_info = await AgentFactory.get_agent(AgentType.FABRIC)
@@ -249,7 +247,7 @@ class ChatWithDataPlugin:
     #             #             new_index = int(parts[1]) + 1
     #             #             return f"[{new_index}]"
     #             #         return match.group(0)
-                    
+
     #             #     return re.sub(r'【\s*(\d+:\d+)\s*†source】', replace_marker, text)
 
     #             # Check the response structure
@@ -265,7 +263,7 @@ class ChatWithDataPlugin:
     #             #     raise
 
     #             try:
-    #                 messages = project_client.agents.messages.list(thread_id=thread.id, order=ListSortOrder.ASCENDING)                    
+    #                 messages = project_client.agents.messages.list(thread_id=thread.id, order=ListSortOrder.ASCENDING)
     #                 for msg in messages:
     #                     if msg.role == MessageRole.AGENT and msg.text_messages:
     #                         raw_answer = msg.text_messages[-1].text.value
@@ -280,15 +278,15 @@ class ChatWithDataPlugin:
 
     #             logging.info(f"FABRIC-CustomerSalesKernel-Thread ID: {thread.id}, Run ID: {run.id}")
     #             # project_client.agents.threads.delete(thread_id=thread.id)
-                
+
     #         if not answer["answer"]:
     #             answer["answer"] = "I couldn't find specific information about customer sales. Please try rephrasing your question."
-                
+
     #     except Exception as e:
     #         logging.error(f"Full error details: {repr(e)}")
     #         import traceback
     #         return {"answer": "Details could not be retrieved. Please try again later.", "citations": []}
-        
+
     #     print(f"FABRIC-CustomerSalesKernel-Answer: %s" % answer, flush=True)
     #     return answer
 
