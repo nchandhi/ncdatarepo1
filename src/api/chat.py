@@ -13,7 +13,6 @@ import uuid
 from types import SimpleNamespace
 from typing import Annotated, AsyncGenerator
 
-import httpx
 from cachetools import TTLCache
 from dotenv import load_dotenv
 from fastapi import APIRouter, Request, HTTPException, status
@@ -33,7 +32,7 @@ from semantic_kernel.exceptions.agent_exceptions import AgentException
 from semantic_kernel.functions.kernel_function_decorator import kernel_function
 
 # Azure Auth
-from auth.azure_credential_utils import get_azure_credential, get_azure_credential_async
+from auth.azure_credential_utils import get_azure_credential
 
 load_dotenv()
 
@@ -605,86 +604,3 @@ async def conversation(request: Request):
             span.record_exception(ex)
             span.set_status(Status(StatusCode.ERROR, str(ex)))
         return JSONResponse(content={"error": "An internal error occurred while processing the conversation."}, status_code=500)
-
-
-@router.get("/layout-config")
-async def get_layout_config():
-    """Get application layout configuration from environment variables."""
-    layout_config_str = os.getenv("REACT_APP_LAYOUT_CONFIG", "")
-    if layout_config_str:
-        try:
-            layout_config_json = json.loads(layout_config_str)
-            track_event_if_configured("LayoutConfigFetched", {"status": "success"})  # Parse the string into JSON
-            return JSONResponse(content=layout_config_json)    # Return the parsed JSON
-        except json.JSONDecodeError as e:
-            logger.exception("Failed to parse layout config JSON: %s", str(e))
-            span = trace.get_current_span()
-            if span is not None:
-                span.record_exception(e)
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-            return JSONResponse(content={"error": "Invalid layout configuration format."}, status_code=400)
-    track_event_if_configured("LayoutConfigNotFound", {})
-    return JSONResponse(content={"error": "Layout config not found in environment variables"}, status_code=400)
-
-
-@router.get("/display-chart-default")
-async def get_chart_config():
-    """Get default chart display configuration from environment variables."""
-    chart_config = os.getenv("DISPLAY_CHART_DEFAULT", "")
-    if chart_config:
-        track_event_if_configured("ChartDisplayDefaultFetched", {"value": chart_config})
-        return JSONResponse(content={"isChartDisplayDefault": chart_config})
-    track_event_if_configured("ChartDisplayDefaultNotFound", {})
-    return JSONResponse(content={"error": "DISPLAY_CHART_DEFAULT flag not found in environment variables"}, status_code=400)
-
-
-@router.post("/fetch-azure-search-content")
-async def fetch_azure_search_content_endpoint(request: Request):
-    """
-    API endpoint to fetch content from a given URL using the Azure AI Search API.
-    Expects a JSON payload with a 'url' field.
-    """
-    try:
-        # Parse the request JSON
-        request_json = await request.json()
-        url = request_json.get("url")
-
-        if not url:
-            return JSONResponse(content={"error": "URL is required"}, status_code=400)
-
-        # Get Azure AD token
-        credential = get_azure_credential_async()
-        token = await credential.get_token("https://search.azure.com/.default")
-        access_token = token.token
-
-        async def fetch_content():
-            try:
-                async with httpx.AsyncClient() as client:
-                    response = await client.get(
-                        url,
-                        headers={
-                            "Authorization": f"Bearer {access_token}",
-                            "Content-Type": "application/json"
-                        },
-                        timeout=10
-                    )
-                    if response.status_code == 200:
-                        data = response.json()
-                        content = data.get("content", "")
-                        return content
-                    else:
-                        return f"Error: HTTP {response.status_code}"
-            except Exception:
-                logger.exception("Exception occurred while making the HTTP request")
-                return "Error: Unable to fetch content"
-
-        content = await fetch_content()
-
-        return JSONResponse(content={"content": content})
-
-    except Exception:
-        logger.exception("Error in fetch_azure_search_content_endpoint")
-        return JSONResponse(
-            content={"error": "Internal server error"},
-            status_code=500
-        )
