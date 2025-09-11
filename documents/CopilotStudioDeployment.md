@@ -28,8 +28,6 @@
 3. Configure your agent by giving it a Name and Description that describes its purpose and role. Make sure to save your changes.
 ![microsoft-copilot-studio-main](Images/cps/microsoft-copilot-studio-main.png)
 
-![xxx](Images/cps/xxx.png)
-
 4. To add a Fabric data agent to your custom AI agent in Copilot Studio, navigate to Agents from the top pane and then select + Add to add agents to your custom AI agent.
 ![microsoft-copilot-studio-agents](Images/cps/microsoft-copilot-studio-agents.png)
 
@@ -61,9 +59,9 @@
 
 
 13. You can publish the custom AI agent and then navigate to the Channels to select your desired consumption channel.
-![microsoft-copilot-studio-publish](Images/cps/microsoft-copilot-studio-publish.png)
+    ![microsoft-copilot-studio-publish](Images/cps/microsoft-copilot-studio-publish.png)
 
-![microsoft-copilot-studio-channels](Images/cps/microsoft-copilot-studio-channels.png)
+    ![microsoft-copilot-studio-channels](Images/cps/microsoft-copilot-studio-channels.png)
 
 14. To publish to Teams, select Teams and Microsoft 365 Copilot from the list of channels. This opens the window on left. Select Add channel to enable this channel. Once done, the See agent in Teams are active. You can select it, which prompts you to open Microsoft Teams.
 ![microsoft-copilot-studio-teams-channels](Images/cps/microsoft-copilot-studio-teams-channels.png)
