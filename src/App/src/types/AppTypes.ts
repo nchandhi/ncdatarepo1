@@ -99,7 +99,6 @@ export type ChatResponseChoice = {
 };
 
 export type ChartDataResponse = {
-  answer: string;
   data: any,
   options: any,
   type: string

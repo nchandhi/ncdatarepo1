@@ -123,7 +123,7 @@ const Chat: React.FC<ChatProps> = ({
         
         return toolMessage.citations;
       } catch {
-        // console.log("ERROR WHIEL PARSING TOOL CONTENT");
+        console.log("ERROR WHIEL PARSING TOOL CONTENT");
       }
     return [];
   };
@@ -247,7 +247,7 @@ const Chat: React.FC<ChatProps> = ({
               runningText = text;
             }
           } catch (e) {
-            // console.error(":::::::error while parsing text before split", e);
+            console.error("error while parsing text before split", e);
           }
 
         }
@@ -337,7 +337,7 @@ const Chat: React.FC<ChatProps> = ({
               scrollChatToBottom();
             }
           } catch (e) {
-            // console.log("Error while parsing charts response", e);
+            console.log("Error while parsing charts response", e);
           }
         }
       }
@@ -465,7 +465,7 @@ const Chat: React.FC<ChatProps> = ({
               runningText = text;
             }
           } catch (e) {
-            // console.error("error while parsing text before split", e);
+            console.error("error while parsing text before split", e);
           }
           if (!isChartResponseReceived) {
             //text based streaming response
@@ -520,7 +520,7 @@ const Chat: React.FC<ChatProps> = ({
                   }
                 }
               } catch (e) {
-                // console.log("Error while parsing and appending content", e);
+                console.log("Error while parsing and appending content", e);
               }
             });
             if (hasError) {
@@ -556,17 +556,9 @@ const Chat: React.FC<ChatProps> = ({
             } catch (e) {
               chartResponse = parsedChartResponse?.choices[0]?.messages[0]?.content;
             }
-          
-            if (typeof chartResponse === 'object' &&  'answer' in chartResponse) {
-              if (
-                chartResponse.answer === "" ||
-                chartResponse.answer === undefined ||
-                (typeof chartResponse.answer === "object" && Object.keys(chartResponse.answer).length === 0)
-              ) {
-                chartResponse = "Chart can't be generated, please try again.";
-              } else {
-                chartResponse = chartResponse.answer;
-              }
+
+            if (typeof chartResponse === 'object' && chartResponse?.answer) {
+              chartResponse = chartResponse.answer;
             }
 
             if (

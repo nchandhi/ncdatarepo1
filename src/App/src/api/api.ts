@@ -29,7 +29,7 @@ export async function getUserInfo(): Promise<UserInfo[]> {
   if (!response.ok) {
     // Use new error handling system
     await ApiErrorHandler.handleApiError(response, '/.auth/me');
-    // console.error("No identity provider found. Access to chat will be blocked.");
+    console.error("No identity provider found. Access to chat will be blocked.");
     return [];
   }
   const payload = await response.json();
