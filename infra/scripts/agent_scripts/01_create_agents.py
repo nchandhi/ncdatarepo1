@@ -49,8 +49,9 @@ sql_agent_instructions = f'''You are an assistant that helps generate valid T-SQ
         Generate a valid T-SQL query for the user's request using these tables:    
         {tables_str}
         Use accurate and semantically appropriate SQL expressions, data types, functions, aliases, and conversions based strictly on the column definitions and the explicit or implicit intent of the user query.
-        Avoid assumptions or defaults not grounded in schema or context.
+        Avoid assumptions or defaults not grounded in the provided schema or context and do not reference, invent or use any columns or tables that are not explicitly part of the provided schema.
         Ensure all aggregations, filters, grouping logic, and time-based calculations are precise, logically consistent, and reflect the user's intent without ambiguity.
+		Be SQL Server compatible: do NOT put ORDER BY inside views, inline functions, subqueries, derived tables, or common table expressions unless you also use TOP/OFFSET appropriately inside that subquery.
         **Always** return a valid T-SQL query. Only return the SQL query text—no explanations.'''
         
 chart_agent_instructions = """You are an assistant that helps generate valid chart data to be shown using chart.js with version 4.4.4 compatible.
