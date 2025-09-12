@@ -143,7 +143,7 @@ const Chat: React.FC<ChatProps> = ({
     if (state.chat.generatingResponse || state.chat.isStreamingInProgress) {
       const chatAPISignal = abortFuncs.current.shift();
       if (chatAPISignal) {
-        console.log("chatAPISignal", chatAPISignal);
+        // console.log("chatAPISignal", chatAPISignal);
         chatAPISignal.abort(
           "Chat Aborted due to switch to other conversation while generating"
         );
