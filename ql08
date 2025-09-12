@@ -1,0 +1,511 @@
+[33mcommit 657fcad34e7ebf9cbcc211ce47617b685006312b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mPSL-UI-ISSUES[m[33m, [m[1;31morigin/PSL-UI-ISSUES[m[33m)[m
+Author: Rohini-Microsoft <v-rwalunj@microsoft.com>
+Date:   Tue Aug 26 18:49:12 2025 +0530
+
+    revert changes
+
+[33mcommit 4281e6e76d9da0325d0b2f112f1a2e31017840ee[m
+Author: Rohini-Microsoft <v-rwalunj@microsoft.com>
+Date:   Tue Aug 26 18:43:56 2025 +0530
+
+    fixed json response on UI
+
+[33mcommit c63d33079d67090ede78b81800c812d6fe2bbcb4[m
+Author: Rohini-Microsoft <v-rwalunj@microsoft.com>
+Date:   Tue Aug 26 18:42:20 2025 +0530
+
+    revert
+
+[33mcommit e5fe2e61cfd29aadbcce03f8f41bba80a177697d[m
+Author: Rohini-Microsoft <v-rwalunj@microsoft.com>
+Date:   Tue Aug 26 18:40:30 2025 +0530
+
+    fixed issue display json response on ui
+
+[33mcommit bf59221adf91ed05f2f9f7ce7c0c21e936c13fd9[m[33m ([m[1;32mmain[m[33m)[m
+Merge: ebb45ff be8bc48
+Author: nchandhi <nalini.chandhi@microsoft.com>
+Date:   Mon Aug 25 13:46:46 2025 -0700
+
+    Merge pull request #13 from nchandhi/bicep_comment_services
+    
+    fix: bicep change MID fix
+
+[33mcommit be8bc48354ec03f9b5cd577d1e3adee5cc17271b[m[33m ([m[1;31morigin/bicep_comment_services[m[33m)[m
+Author: nchandhi <nalini.chandhi@microsoft.com>
+Date:   Mon Aug 25 13:45:38 2025 -0700
+
+    bicep change mid fix
+
+[33mcommit ebb45ff5198839d5cc4590d69d540f25aa6473bd[m
+Merge: 1ed04b6 9bced44
+Author: nchandhi <nalini.chandhi@microsoft.com>
+Date:   Mon Aug 25 13:20:47 2025 -0700
+
+    Merge pull request #12 from nchandhi/bicep_comment_services
+    
+    fix: Bicep  changes for AI Foundry and search
+
+[33mcommit 9bced44e9b5270c81d03d20ae0ee1a2be2c2b1c0[m
+Author: nchandhi <nalini.chandhi@microsoft.com>
+Date:   Mon Aug 25 13:19:04 2025 -0700
+
+    Bicep  changes for AI Foundry and search
+
+[33mcommit 1ed04b6c9714c2c58d679ac28d4cd43a20da18db[m
+Merge: 0ba7920 05c0fe4
+Author: nchandhi <nalini.chandhi@microsoft.com>
+Date:   Mon Aug 25 13:02:47 2025 -0700
+
+    Merge pull request #11 from nchandhi/bicep_comment_services
+    
+    fix: bicep changes for cosmos, search, SQL
+
+[33mcommit 05c0fe4672e9a21c27cbd970aea6f3f5d74e7b66[m
+Author: nchandhi <nalini.chandhi@microsoft.com>
+Date:   Mon Aug 25 13:00:53 2025 -0700
+
+    bicep changes for cosmos, search, SQL
+
+[33mcommit 0ba7920d5809a6f72a0ee25762613b5026736b97[m
+Author: nchandhi <nalini.chandhi@microsoft.com>
+Date:   Fri Aug 22 13:00:34 2025 -0700
+
+    Comment out metadata template line
+
+[33mcommit 9df8158e06df819b6b0ad4bd031da5d730e3e886[m
+Merge: 702f826 f587371
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Fri Aug 22 15:33:59 2025 +0530
+
+    [feat] Agent creation during deployment, SQL kernel to fabric SQL DB
+
+[33mcommit f58737146e4baa2fa5977a3cdece5bb9998c9a7d[m
+Author: Ragini-Microsoft <v-raginich@microsoft.com>
+Date:   Fri Aug 22 15:29:23 2025 +0530
+
+    updated baseurl in bicep
+
+[33mcommit 3cf640fc001af4ee64e3663a183f2f0ecba8f2cd[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Fri Aug 22 15:16:49 2025 +0530
+
+    Removed fabric sql conn string
+
+[33mcommit 6558517c478f6569c131f7c1b7912b88e3eb76d6[m
+Author: Ragini-Microsoft <v-raginich@microsoft.com>
+Date:   Fri Aug 22 13:23:50 2025 +0530
+
+    Chat files code restructure
+
+[33mcommit a3c925f07b1708e219e229defaddc0fba06091b7[m
+Merge: 53910bf 702f826
+Author: Ragini-Microsoft <v-raginich@microsoft.com>
+Date:   Fri Aug 22 13:21:30 2025 +0530
+
+    Merge branch 'main' of https://github.com/nchandhi/ncdatarepo1 into psl-bicep-agent
+
+[33mcommit 702f82699565990ae4941dae02ad80ede07da3d7[m
+Merge: 8692199 ad85008
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Thu Aug 21 18:49:45 2025 +0530
+
+    fix: added font changes
+
+[33mcommit 53910bf258b9051cb3fbc12b634cff68b5128960[m
+Author: Ragini-Microsoft <v-raginich@microsoft.com>
+Date:   Thu Aug 21 18:42:31 2025 +0530
+
+    Updated the agents backend code
+
+[33mcommit ad8500851ecbda622dd89b19d93a2eeb5bd46056[m[33m ([m[1;31morigin/psl_FE_changes[m[33m, [m[1;32mpsl_FE_changes[m[33m)[m
+Author: Rohini-Microsoft <v-rwalunj@microsoft.com>
+Date:   Thu Aug 21 16:37:16 2025 +0530
+
+    added font changes
+
+[33mcommit 88b01091c4053d1a5df10883f7937b7f3fdf304e[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Thu Aug 21 16:10:02 2025 +0530
+
+    Refactoring and fixing issues
+
+[33mcommit 601b76554e5ec64e67a10db74e35b231c6ebd4f2[m
+Author: Ragini-Microsoft <v-raginich@microsoft.com>
+Date:   Thu Aug 21 13:02:36 2025 +0530
+
+    Updated bicep for 2 more agents creation
+
+[33mcommit 20cff6dc837297e9d43899ac44889d4e4f441899[m
+Merge: 2783c9e f576f58
+Author: Ragini-Microsoft <v-raginich@microsoft.com>
+Date:   Thu Aug 21 12:30:26 2025 +0530
+
+    Merge branch 'psl-bicep-agent' of https://github.com/nchandhi/ncdatarepo1 into psl-bicep-agent
+
+[33mcommit f576f581a097e764bd44e1bb355c1ea91da563cd[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Thu Aug 21 12:29:01 2025 +0530
+
+    updated gitignore
+
+[33mcommit 2783c9e1db52073f8c10495bab12e84c764d5e4a[m
+Merge: 7b6d752 480b389
+Author: Ragini-Microsoft <v-raginich@microsoft.com>
+Date:   Thu Aug 21 12:25:05 2025 +0530
+
+    Merge branch 'psl-bicep-agent' of https://github.com/nchandhi/ncdatarepo1 into psl-bicep-agent
+
+[33mcommit 480b3893eba91701429dd9592ba28f6a79714372[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Thu Aug 21 11:13:54 2025 +0530
+
+    Modified instruction for SQL Agent
+
+[33mcommit 67e296bd2780cbbbfeeb840990afbd007bd6711c[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Thu Aug 21 10:59:41 2025 +0530
+
+    SQL kernel to Fabric SQL database
+
+[33mcommit 7b6d752d5505afda4a8f462c76baf4a79466ba9d[m
+Merge: 562acef 8692199
+Author: Ragini-Microsoft <v-raginich@microsoft.com>
+Date:   Thu Aug 21 10:25:22 2025 +0530
+
+    Merge branch 'main' of https://github.com/nchandhi/ncdatarepo1 into psl-bicep-agent
+
+[33mcommit 8692199b3d8fac1ceb874971e2d2b0be2a9fb58b[m
+Merge: ff6aeec 3344774
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Wed Aug 20 18:14:46 2025 +0530
+
+    refactor: simplify code-file structure
+
+[33mcommit 3344774d4cc6b250c6d7e4f0914ad8aee5b5c4d2[m
+Author: Ragini-Microsoft <v-raginich@microsoft.com>
+Date:   Wed Aug 20 17:40:58 2025 +0530
+
+    added the fabric data agent commented code for reference
+
+[33mcommit 562acef43701769b19871eecd62ddda28f30ad03[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Wed Aug 20 17:20:48 2025 +0530
+
+    Creating and using SQL agent
+
+[33mcommit e5aa94c5305f8da7a01417dfe391e6bbba63cffa[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Wed Aug 20 15:22:49 2025 +0530
+
+    SQL Agent creation Bicep
+
+[33mcommit 87fecd329f81b400009973ed9affb0301da70667[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Wed Aug 20 14:57:13 2025 +0530
+
+    Agent creation using Bicep with env ouput
+
+[33mcommit ed70447e0dcd1352b40accced3236113fd43440d[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Wed Aug 20 12:37:18 2025 +0530
+
+    Modified baseurl
+
+[33mcommit 2ab958cb89b347dff9d92de5c4315c2d6c2b0e97[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Wed Aug 20 12:35:03 2025 +0530
+
+    Initial changes to create Agent using Bicep
+
+[33mcommit 72fe83d53d1964ca70eac1e4b99f8095d518b955[m[33m ([m[1;31morigin/psl-pk-restructure[m[33m)[m
+Author: Pavan-Microsoft <v-kupavan@microsoft.com>
+Date:   Wed Aug 20 12:25:27 2025 +0530
+
+    chart streaming changes
+
+[33mcommit 40b2c896908343bda2b2cdbef6876434d5059f3a[m
+Author: Pavan-Microsoft <v-kupavan@microsoft.com>
+Date:   Wed Aug 20 11:33:24 2025 +0530
+
+    move chart generation logic to kernel function
+
+[33mcommit 019eb13636d6f64c92a1b090b0017b72995d40d5[m
+Author: Pavan-Microsoft <v-kupavan@microsoft.com>
+Date:   Wed Aug 20 11:04:55 2025 +0530
+
+    remove uselocalbuild
+
+[33mcommit 3ff757cacae52445ca8afa090868688d2075ce4b[m
+Author: Pavan-Microsoft <v-kupavan@microsoft.com>
+Date:   Mon Aug 18 18:51:33 2025 +0530
+
+    fix pylint issue
+
+[33mcommit f9ff258a59cec89d8339754a6b76032c0b41f0df[m
+Author: Pavan-Microsoft <v-kupavan@microsoft.com>
+Date:   Mon Aug 18 18:51:07 2025 +0530
+
+    fix pylint issue
+
+[33mcommit a64417e17277fcedd41eb3711260ab22dad989b7[m
+Author: Pavan-Microsoft <v-kupavan@microsoft.com>
+Date:   Mon Aug 18 17:34:33 2025 +0530
+
+    rename variable
+
+[33mcommit 44f1c0b27c10eb0eed1ac792281caae9e3b86c13[m
+Author: Pavan-Microsoft <v-kupavan@microsoft.com>
+Date:   Mon Aug 18 17:24:37 2025 +0530
+
+    remove print statement
+
+[33mcommit 6ad88def73b4697b474feeb04109714a183084fd[m
+Author: Pavan-Microsoft <v-kupavan@microsoft.com>
+Date:   Mon Aug 18 16:43:20 2025 +0530
+
+    remove unused code
+
+[33mcommit a3ca878db693957bb6107ce30c177b14f48393e1[m
+Author: Pavan-Microsoft <v-kupavan@microsoft.com>
+Date:   Mon Aug 18 16:30:49 2025 +0530
+
+    remove username and password
+
+[33mcommit 576f4c9de7f1a27f76154c81b0bf9f2da802a745[m
+Author: Pavan-Microsoft <v-kupavan@microsoft.com>
+Date:   Mon Aug 18 15:18:41 2025 +0530
+
+    fix reference issues
+
+[33mcommit e41af01ab74065a8595b5f0666cbb6447835ea94[m
+Author: Pavan-Microsoft <v-kupavan@microsoft.com>
+Date:   Thu Aug 14 20:53:39 2025 +0530
+
+    remove print statement
+
+[33mcommit 35bcd4e7a69d0fbf353fd91564ade480bae40afd[m
+Author: Pavan-Microsoft <v-kupavan@microsoft.com>
+Date:   Thu Aug 14 18:36:40 2025 +0530
+
+    simplify folder structure
+
+[33mcommit ff6aeec97714414f5b557df45dbf927e707d9e78[m
+Merge: 585f7bc da96f4e
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Thu Aug 7 13:34:55 2025 +0530
+
+    fix: History API changes,managed identity connection and automated table  creation in fabric SQL as part of deployment
+
+[33mcommit da96f4e06223367771ccc19707c0fbed71714c2e[m
+Merge: e79e82e ba9131a
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Thu Aug 7 13:13:29 2025 +0530
+
+    fix: handled all status code with appropriate error in history APIs
+
+[33mcommit e79e82e3eab920d6128c7b816c68c27ae683210a[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Thu Aug 7 10:19:10 2025 +0530
+
+    Update fabric_sqldb_service.py
+
+[33mcommit ba9131acec3bf01c7f4224e2e24974b7729c79b3[m
+Author: Rohini-Microsoft <v-rwalunj@microsoft.com>
+Date:   Thu Aug 7 01:34:44 2025 +0530
+
+    handled all status code
+
+[33mcommit b67b1230ba013a256b6f82d674ac1b164ce82669[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Wed Aug 6 16:27:30 2025 +0530
+
+    Chathistory API connecting with Fabric SQL db with managed identity
+
+[33mcommit 9cc103e4c2791d885b4140b0f77e5364ad898a6a[m
+Author: Ragini-Microsoft <v-raginich@microsoft.com>
+Date:   Tue Aug 5 16:29:38 2025 +0530
+
+    update read and update apis to work for citations
+
+[33mcommit 90ede0d93a1c165cf55a681c6dc4697522e1856b[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Mon Aug 4 18:31:58 2025 +0530
+
+    Chat history fronend url to API updated
+
+[33mcommit 48af538ae06253d234c275ce99e7a860d2f41869[m
+Merge: 631f1c5 cdb6a20
+Author: Rohini-Microsoft <v-rwalunj@microsoft.com>
+Date:   Mon Aug 4 17:42:12 2025 +0530
+
+    Merge branch 'psl_fabric_sql' of https://github.com/nchandhi/ncdatarepo1 into psl_fabric_sql
+
+[33mcommit 631f1c536c997aae83c2c127bcad4c0b050b6910[m
+Author: Rohini-Microsoft <v-rwalunj@microsoft.com>
+Date:   Mon Aug 4 17:42:07 2025 +0530
+
+    revert the changes
+
+[33mcommit cdb6a2093a6ce3a8616d3ef2e897b2ed2cd844e4[m
+Merge: cdb823e 26b4834
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Mon Aug 4 17:34:53 2025 +0530
+
+    Merge branch 'psl_fabric_sql' of https://github.com/nchandhi/ncdatarepo1 into psl_fabric_sql
+
+[33mcommit cdb823e0fb8ee44f02367bab70ac70541f0a43af[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Mon Aug 4 17:34:36 2025 +0530
+
+    Refractor history API
+
+[33mcommit 26b4834b971083d87cd784b3ec8c50480f26ce16[m
+Author: Ragini-Microsoft <v-raginich@microsoft.com>
+Date:   Mon Aug 4 16:04:05 2025 +0530
+
+    Validation added for user_id param in delete_all api
+
+[33mcommit 922ca2d4245853cccbfd4f50607ad099377efe19[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Mon Aug 4 13:54:10 2025 +0530
+
+    History APIs exception handles
+
+[33mcommit fc50abbe9d0f331ff24d848a0418cfa8d9b54c0f[m
+Merge: 1aa1c3e 59031fa
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Fri Aug 1 18:07:24 2025 +0530
+
+    Merge branch 'psl_fabric_sql' of https://github.com/nchandhi/ncdatarepo1 into psl_fabric_sql
+
+[33mcommit 1aa1c3e5a646209d891c3070943349a9dc9828e9[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Fri Aug 1 18:05:33 2025 +0530
+
+    Update history API fabric sql
+
+[33mcommit 59031faab957dee370efca390f7c5cb32af5e653[m
+Author: Rohini-Microsoft <v-rwalunj@microsoft.com>
+Date:   Fri Aug 1 16:02:54 2025 +0530
+
+    modify code  based on current response
+
+[33mcommit 7a3b9d354f996606f2253a342120505b701933db[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Fri Aug 1 15:58:23 2025 +0530
+
+    Removed userid value
+
+[33mcommit 5feb7dc009f2304ba7081e5be34e872107dcd832[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Fri Aug 1 15:17:46 2025 +0530
+
+    Updated response structure
+
+[33mcommit b08dc7de31f7685ccfceeda56fabafb92f56a895[m
+Merge: a697dbb 8f011e1
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Thu Jul 31 20:45:14 2025 +0530
+
+    Merge branch 'psl_fabric_sql' of https://github.com/nchandhi/ncdatarepo1 into psl_fabric_sql
+
+[33mcommit a697dbb2aeab49cef6a835df60fa50b146e13545[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Thu Jul 31 20:44:50 2025 +0530
+
+    Changes pyodbc driver to 17 for Fabric SQL
+
+[33mcommit d5112600df6c7a32f7128d891c3933865ec0ff1b[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Thu Jul 31 13:47:21 2025 +0530
+
+    Connecting Fabric SQL by MI using Service Connector
+
+[33mcommit 8f011e158e533b4aca418a1398ab3686476b0073[m
+Merge: e9176d6 ec44164
+Author: Rohini-Microsoft <v-rwalunj@microsoft.com>
+Date:   Wed Jul 30 17:47:15 2025 +0530
+
+    Merge branch 'psl_fabric_sql' of https://github.com/nchandhi/ncdatarepo1 into psl_fabric_sql
+
+[33mcommit ec44164c0520418227bd6176abc92581f80481cd[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Wed Jul 30 17:40:26 2025 +0530
+
+    Migrated few more Chat history APIs to point Fabric SQL
+
+[33mcommit e9176d6ac188d75d5e7006c64f3c01b6d7e92fef[m
+Author: Rohini-Microsoft <v-rwalunj@microsoft.com>
+Date:   Wed Jul 30 15:30:21 2025 +0530
+
+    read and list api call function  changes done
+
+[33mcommit 585f7bc3c31ec77efff7e3f059477f9395a208f0[m
+Merge: 46b1cd4 d0d9d0b
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Tue Jul 29 18:34:24 2025 +0530
+
+    Merge pull request #3 from nchandhi/pslsqldbchanges
+    
+    fix: modified sqldb_service files
+
+[33mcommit d0d9d0bd901924c26449816ee1c330a16b6f6cb0[m[33m ([m[1;31morigin/pslsqldbchanges[m[33m)[m
+Author: Rohini-Microsoft <v-rwalunj@microsoft.com>
+Date:   Tue Jul 29 17:51:36 2025 +0530
+
+    removed parameter
+
+[33mcommit 4ae68911d1a2f2ba51827a9ccd6882a1ab5bff22[m
+Author: Rohini-Microsoft <v-rwalunj@microsoft.com>
+Date:   Tue Jul 29 17:49:28 2025 +0530
+
+    added chat service function called into history_routes
+
+[33mcommit 4a5b4d769ca9032c3cf2ede0a38d89d967673aac[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Tue Jul 29 16:56:40 2025 +0530
+
+    Add 2 API for fabric sql database
+
+[33mcommit 5b630ffb5b82cec2e6d7ef14cbb567989557550d[m
+Author: Rohini-Microsoft <v-rwalunj@microsoft.com>
+Date:   Mon Jul 28 19:18:54 2025 +0530
+
+    modified sqldb service file
+
+[33mcommit 48d989deda26e5ce98059291a47c5063b5544b6a[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Mon Jul 28 16:48:01 2025 +0530
+
+    Sample code to connect fabric sql from api
+
+[33mcommit 46b1cd4f567d5b5bd001dfb7554b64ed3bd6c087[m
+Author: Avijit-Microsoft <v-aghorui@microsoft.com>
+Date:   Thu Jul 24 12:12:31 2025 +0530
+
+    Modifying docker image name
+
+[33mcommit 38737951e17c6d3961d2f345803ef03d275a0540[m
+Merge: 95c64c3 8e590f2
+Author: Rohini-Microsoft <168007985+Rohini-Microsoft@users.noreply.github.com>
+Date:   Wed Jul 23 15:52:20 2025 +0530
+
+    Merge pull request #2 from Rohini-Microsoft/main
+    
+    fix: changed template name in azure.yml
+
+[33mcommit 8e590f20221ed04a5f49afa71a2da2047835dbd8[m
+Author: Rohini-Microsoft <v-rwalunj@microsoft.com>
+Date:   Wed Jul 23 15:48:07 2025 +0530
+
+    changed template name in azure.yml
+
+[33mcommit 95c64c3c111f0dfc9cfeef559fa0c43c4cda02f5[m
+Merge: 4b00c4f d873859
+Author: Rohini-Microsoft <168007985+Rohini-Microsoft@users.noreply.github.com>
+Date:   Wed Jul 23 15:18:52 2025 +0530
+
+    Merge pull request #1 from Rohini-Microsoft/main
+    
+    feat: Initial Commit - Removed dashboard from km generic accelerator
