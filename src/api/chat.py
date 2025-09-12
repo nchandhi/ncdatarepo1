@@ -98,7 +98,6 @@ class ChatWithDataPlugin:
         """
 
         query = input
-        logger.info("Received query: %s", query)
         try:
             from history_sql import execute_sql_query
             project_client = AIProjectClient(
@@ -129,7 +128,6 @@ class ChatWithDataPlugin:
             for msg in messages:
                 if msg.role == MessageRole.AGENT and msg.text_messages:
                     sql_query = msg.text_messages[-1].text.value
-                    logger.info("Extracted SQL Query: %s", sql_query)
                     break
             sql_query = sql_query.replace("```sql", '').replace("```", '').strip()
             logger.info("Generated SQL Query: %s", sql_query)
