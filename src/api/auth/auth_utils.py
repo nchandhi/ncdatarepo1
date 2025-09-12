@@ -24,6 +24,13 @@ def get_authenticated_user_details(request_headers):
     user_object["client_principal_b64"] = raw_user_object.get("x-ms-client-principal")
     user_object["aad_id_token"] = raw_user_object.get("x-ms-token-aad-id-token")
 
+    #AVJ
+    if not user_object["user_principal_id"]:
+        # For testing purposes, we can use a hardcoded user_id
+        # In production, this should be replaced with actual user authentication
+        logging.warning("No user_id found in request headers. Using hardcoded user_id for testing.")
+        user_object["user_principal_id"] = "4001b5a6-87d6-4758-a7d3-8145c29b9b96"
+
     return user_object
 
 

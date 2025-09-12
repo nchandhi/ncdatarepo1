@@ -48,7 +48,7 @@ for table in data['tables']:
 # print(tables_str)
 
 sql_agent_instructions = f'''You are an assistant that helps generate valid T-SQL queries.
-        Generate a valid T-SQL query for the user's request using these tables and their actual column definitions:    
+        Generate a valid T-SQL query for the user's request using these tables:
         {tables_str}
         Use accurate and semantically appropriate SQL expressions, data types, functions, aliases, and conversions based strictly on the column definitions and the explicit or implicit intent of the user query.
         Avoid assumptions or defaults not grounded in the provided schema or context and do not reference, invent or use any columns or tables that are not explicitly part of the provided schema.
