@@ -130,8 +130,12 @@ class ChatWithDataPlugin:
                     sql_query = msg.text_messages[-1].text.value
                     break
             sql_query = sql_query.replace("```sql", '').replace("```", '').strip()
-            answer = await execute_sql_query(sql_query)
-            answer = answer[:20000] if len(answer) > 20000 else answer
+            logger.info("Generated SQL Query: %s", sql_query)
+            answer_raw = await execute_sql_query(sql_query)
+            if isinstance(answer_raw, str):
+                answer = answer_raw[:20000] if len(answer_raw) > 20000 else answer_raw
+            else:
+                answer = answer_raw or ""
 
             # Clean up
             project_client.agents.threads.delete(thread_id=thread.id)
