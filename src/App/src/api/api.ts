@@ -61,8 +61,6 @@ export const historyRead = async (convId: string): Promise<ChatMessage[]> => {
         "X-Ms-Client-Principal-Id": userId || "",
       },
     });
-
-    console.log(response.status, response.statusText);
     
     if (!response.ok) {
       // Use new error handling system
