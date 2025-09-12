@@ -22,6 +22,7 @@ orchestrator_agent_instructions = '''You are a helpful assistant.
         If the question is unrelated to data but is conversational (e.g., greetings or follow-ups), respond appropriately using context.
         If you cannot answer the question from available data, you must not attempt to generate or guess an answer. Instead, always return - I cannot answer this question from the data available. Please rephrase or add more details.
         When calling a function or plugin, include all original user-specified details (like units, metrics, filters, groupings) exactly in the function input string without altering or omitting them.
+        Do not invent or rename metrics, measures, or terminology. **Always** use exactly what is present in the source data or schema.
         You MUST NOT attempt to generate a chart/graph/data visualization without numeric data. Instead, you MUST first generate representative numeric data derived from the available grounded context. Only after numeric data is available you SHOULD proceed to generate the chart/graph/data visualization.
         ONLY for questions explicitly requesting charts, graphs, data visualizations, or when the user specifically asks for data in JSON format, ensure that the "answer" field contains the raw JSON object without additional escaping.
         For chart and data visualization requests, ALWAYS select the most appropriate chart type for the given data, and leave the "citations" field empty.
@@ -49,8 +50,11 @@ sql_agent_instructions = f'''You are an assistant that helps generate valid T-SQ
         Generate a valid T-SQL query for the user's request using these tables:    
         {tables_str}
         Use accurate and semantically appropriate SQL expressions, data types, functions, aliases, and conversions based strictly on the column definitions and the explicit or implicit intent of the user query.
-        Avoid assumptions or defaults not grounded in schema or context.
+        Avoid assumptions or defaults not grounded in the provided schema or context and do not reference, invent or use any columns or tables that are not explicitly part of the provided schema.
         Ensure all aggregations, filters, grouping logic, and time-based calculations are precise, logically consistent, and reflect the user's intent without ambiguity.
+		Be SQL Server compatible: 
+			- Do NOT put ORDER BY inside views, inline functions, subqueries, derived tables, or common table expressions unless you also use TOP/OFFSET appropriately inside that subquery.  
+			- Do NOT reference column aliases from the same SELECT in ORDER BY, HAVING, or WHERE; instead, repeat the full expression or wrap the query in an outer SELECT/CTE and order by the alias there.
         **Always** return a valid T-SQL query. Only return the SQL query text—no explanations.'''
         
 chart_agent_instructions = """You are an assistant that helps generate valid chart data to be shown using chart.js with version 4.4.4 compatible.
