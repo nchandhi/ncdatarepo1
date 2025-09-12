@@ -1,29 +1,17 @@
 ## Technical Architecture
 
-This section outlines the components and interactions that power the conversational insights platform. The architecture ingests call transcripts and audio files, applies AI services for enrichment and structuring, and surfaces insights via an interactive web experience.
+This section outlines the components and interactions that powers the unifed data analysis platform. The architecture ingests customer information, product details and order history and surfaces insights via an interactive web experience.
 
 ![image](./Images/ReadMe/solution-architecture.png)
 
-### Call Audio Files / Call Transcripts  
-Raw audio and text-based transcripts are the primary input into the system. These files are uploaded and stored for downstream processing.
+### Customer / product / order details
+SQL scripts for the customer, product and order details are the primary input into the system. These tables are uploaded and stored for downstream insight generation.
 
-### Storage Account  
-Stores uploaded call transcripts and audio files. Serves as the initial staging layer before processing begins.
-
-### Azure AI Content Understanding  
-Processes the audio and text files to extract conversation details, including speaker turns, timestamps, and semantic structure.
-
-### Azure AI Search  
-Indexes the vectorized transcripts for semantic search. Enables rapid retrieval of relevant conversation snippets and contextual fragments using vector search and keyword matching.
-
-### SQL Database  
-Stores structured output including extracted entities, mapped concepts, and additional metadata.
-
-### Azure AI Services  
-Performs topic modeling on enriched transcript data, uncovering themes and conversation patterns using pre-trained models.
+### SQL Database in Fabric  
+Stores uploaded customer information, product details and order history tables. Serves as the primary knowledge source to surface insights in the web application. 
 
 ### Azure OpenAI Service  
-Provides large language model (LLM) capabilities to support summarization, natural language querying, and semantic enrichment.
+Provides large language model (LLM) capabilities to support natural language querying.
 
 ### Semantic Kernel  
 Handles orchestration and intelligent function calling for contextualized responses and multi-step reasoning over retrieved data.
@@ -34,8 +22,8 @@ Hosts the web application and API layer that interfaces with the AI services and
 ### Container Registry  
 Stores containerized deployments for use in the hosting environment.
 
-### Azure Cosmos DB  
+### SQL Database in Fabric 
 Persists chat history and session context for the web interface. Enables retrieval of past interactions.
 
 ### Web Front-End  
-An interactive UI where users can explore call insights, visualize trends, ask questions in natural language, and generate charts. Connects directly to Cosmos DB and App Services for real-time interaction.
+An interactive UI where users can explore call insights, visualize trends, ask questions in natural language, and generate charts. Connects directly to SQL Database in Fabric and App Services for real-time interaction.

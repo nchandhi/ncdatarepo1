@@ -30,14 +30,10 @@ export class ApiErrorHandler {
    * Logs error detail to console with structured information
    */
   private static logError(error: ApiError): void {
-    console.group(`🔴 API Error - ${error.endpoint || 'Unknown endpoint'}`);
-    console.error(`Status: ${error.status} ${error.statusText}`);
-    console.error(`Timestamp: ${error.timestamp}`);
     console.error(`Message: ${error.message || 'No message available'}`);
     if (error.error) { 
       console.error('Error detail:', error.error);
     }
-    console.groupEnd();
   }
 
   /**
@@ -156,7 +152,7 @@ export class ApiErrorHandler {
     };
 
     // Log the error
-    ApiErrorHandler.logError(apiError);
+    // ApiErrorHandler.logError(apiError);
 
     return {
       hasError: true,

@@ -1,5 +1,7 @@
-# Agentic Applications with Unified Data Foundation
-Overview...
+# Agentic Applications for Unified Data Foundation
+
+<br/>
+This solution accelerator empowers organizations to make faster, smarter decisions at scale by leveraging agentic AI solutions built on a unified data foundation with Microsoft Fabric. With seamless integration of Azure AI Foundry agents and Semantic Kernel orchestration, teams can design intelligent workflows that automate routine processes, streamline operations, and enable natural language querying across enterprise datasets. This ensures that governed, high-quality data is accessible not only to technical specialists but also to business users, creating a shared environment where insights are surfaced more easily and decisions are grounded in trusted information. By unifying data access and applying AI in the flow of work, organizations gain the agility to respond rapidly to changing business needs, foster collaboration across teams, and drive innovation with greater confidence.
 
 <br/>
 
@@ -15,7 +17,7 @@ Solution overview
 </h2>
 
 
-Solution overview...
+Leverages the Unified Data Foundation in Fabric accelerator, SQL Database in Fabric, Semantic Kernel, and AI Foundry to query structured data. Structured data sets are analyzed through intelligent and orchestrated responses powered by an interactive web front-end for exploring semantic models and data assets. Insights are generated using natural language.
 
 ### Solution architecture
 |![image](./documents/Images/ReadMe/solution-architecture.png)|
@@ -28,24 +30,18 @@ Solution overview...
 <br/>
 
 ### Key features
-<!-- To be updatesd -->
 <details open>  
 <summary>Click to learn more about the key features this solution enables</summary>  
 
-- **Mined entities and relationships** <br/>  
-Azure AI Content Understanding and Azure OpenAI Service extract entities and relationships from unstructured data to create a knowledge base.
+**Built on Microsoft Fabric + Azure AI Foundry**
+- **Unified data foundation with Fabric** <br/>  
+Leverage the foundational capabilities of Microsoft Fabric and a Unified Data Foundation to build intelligent agents that stand apart in orchestration, retrieval, and user experience
 
-- **Processed data at scale** <br/>  
-Microsoft Fabric processes conversation data at scale, generating vector embeddings for efficient retrieval using the RAG (Retrieval-Augmented Generation) pattern.
-
-- **Visualized insights** <br/>  
-An interactive dashboard delivers actionable insights and trends through rich data visualizations.
+- **Governed data at scale** <br/>  
+Seamlessly integrate with Fabric’s data foundation to ensure performance, scalability, and extensibility.
 
 - **Natural language interaction** <br/>  
-Azure OpenAI Service enables contextual question-answering, conversation capabilities, and chart generation, all powered by the RAG pattern.
-
-- **Actionable insights** <br/>  
-Summarized conversations, topic generation, and key phrase extraction support faster decision-making and improved productivity.
+Azure AI Foundry Agents coordinate orchestration and retrieval to deliver fast, contextual answers realizing insights faster. Enable intuitive, natural language querying capabilities that unify access across enterprise data assets.
 
 </details>
 
@@ -82,9 +78,9 @@ Check the [Azure Products by Region](https://azure.microsoft.com/en-us/explore/g
 
 Pricing varies by region and usage, so it isn't possible to predict exact costs for your usage. The majority of Azure resources used in this infrastructure are on usage-based pricing tiers. However, some services—such as Azure Container Registry, which has a fixed cost per registry per day, and others like Cosmos DB or SQL Database when provisioned—may incur baseline charges regardless of actual usage.
 
-Use the [Azure pricing calculator](https://azure.microsoft.com/en-us/pricing/calculator) to calculate the cost of this solution in your subscription. 
+Use the [Azure pricing calculator](https://azure.microsoft.com/en-us/pricing/calculator) and the [Fabric Capacity Estimator](https://www.microsoft.com/en-us/microsoft-fabric/capacity-estimator) to calculate the cost of this solution in your subscription. 
 
-Review a [sample pricing sheet](https://azure.com/e/67c83432524440d98ccb8c92ebd3e2f7) in the event you want to customize and scale usage.
+Review a [sample pricing sheet](https://azure.com/e/708895d4fc4449b1826016fad8a83fe0) in the event you want to customize and scale usage.
 
 _Note: This is not meant to outline all costs as selected SKUs, scaled use, customizations, and integrations into your own tenant can affect the total consumption of this sample solution. The sample pricing sheet is meant to give you a starting point to customize the estimate for your specific needs._
 
@@ -93,11 +89,11 @@ _Note: This is not meant to outline all costs as selected SKUs, scaled use, cust
 | Product | Description | Tier / Expected Usage Notes | Cost |
 |---|---|---|---|
 | [Azure AI Foundry](https://learn.microsoft.com/en-us/azure/ai-foundry) | Used to orchestrate and build AI workflows that combine Azure AI services. | Free Tier | [Pricing](https://azure.microsoft.com/pricing/details/ai-studio/) |
-| [Azure AI Services (OpenAI)](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/overview) | Enables language understanding, summarization, entity extraction, and chat capabilities using GPT models. | S0 Tier; pricing depends on token volume and model used (e.g., GPT-4o-mini). | [Pricing](https://azure.microsoft.com/pricing/details/cognitive-services/) |
+| [Azure AI Services (OpenAI)](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/overview) | Enables language understanding and chat capabilities using GPT models. | S0 Tier; pricing depends on token volume and model used (e.g., GPT-4o-mini). | [Pricing](https://azure.microsoft.com/pricing/details/cognitive-services/) |
 | [Azure Container Apps](https://learn.microsoft.com/en-us/azure/container-apps/overview) | Hosts microservices and APIs powering the front-end and backend orchestration. | Consumption plan with 0.5 vCPU, 1GiB memory; includes a free usage tier. | [Pricing](https://azure.microsoft.com/pricing/details/container-apps/) |
 | [Azure Container Registry](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro) | Stores and serves container images used by Azure Container Apps. | Basic Tier; fixed daily cost per registry. | [Pricing](https://azure.microsoft.com/pricing/details/container-registry/) |
 | [Azure Monitor / Log Analytics](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/log-analytics-overview) | Collects and analyzes telemetry and logs from services and containers. | Pay-as-you-go; charges based on data ingestion volume. | [Pricing](https://azure.microsoft.com/pricing/details/monitor/) |
-| [SQL Database in Fabric](https://learn.microsoft.com/en-us/fabric/fundamentals/microsoft-fabric-overview) | Stores structured data including insights, metadata, and indexed results. | TBD | [Pricing](https://azure.microsoft.com/pricing/details/azure-sql-database/single/) |
+| [SQL Database in Fabric](https://learn.microsoft.com/en-us/fabric/fundamentals/microsoft-fabric-overview) | Stores structured data including insights, metadata, and chat history. | F2 capacity; fixed monthly cost per capacity. | [Pricing](https://azure.microsoft.com/en-us/pricing/details/microsoft-fabric/) |
 | 
 
 
@@ -117,7 +113,9 @@ Business scenario
 
 <br/>
 
-Business scenario...
+The sample data illustrates how this accelerator could be used for an sales analyst scenario across industries. 
+In this scenario, an organization is in the process of analyzing top performing products for sales research. Previously, the sales analyst had to sift through disparate sales and customer data across data silos. Leveraging the solution accelerator, the analyst now has access to unified data in Microsoft Fabric enabling a holistic view of customer and sales performance data. This functionality allows for the analyst to interrogate the data (e.g. "which customer segments show strongest year-over-year revenue growth", "what are my top performance products by demographic").
+
 
 ⚠️ The sample data used in this repository is synthetic and generated. The data is intended for use as sample data only.
 
@@ -125,21 +123,16 @@ Business scenario...
 ### Business value
 <details>
   <summary>Click to learn more about what value this solution provides</summary>
+<br/>
 
-  - **Unlock your data** 
-Accelerate report creation with Intelligent data prep and integration across all sources.
+  - **Intelligent data interaction** 
+Enable conversational agents that understand your company’s unique data and transform natural language questions into automated queries for data-driven answers. Train agents with instructions to gain visibility.
 
-- **Enhance productivity**
-Harness the power of Agentic capabilities to turn your ideas into automated solutions. 
+- **Accelerated insights & productivity**
+Access rapid insights with intelligent data prep, seamless integration, and AI-guided exploration. Analyze, and enrich data to uncover trends, automate workflows, and turn ideas into scalable, agentic solutions.
 
-- **Accelerate insight discovery**
-Rapidly access, analyze, and explore data faster with AI-guided insights that turn raw information into business impact. 
-
-- **Save time and reduce costs** 
-Achieve scalable data discovery and automation to drive cost savings and improve operational efficiency.
-
-- **Turn data into value**
-Deliver actionable insights through robust governance and enriched data to uncover new, untapped insights. 
+- **Governed, scalable and trusted data**
+Deliver actionable insights through robust governance and metadata. Improve decision-making, operational efficiency, and reduce costs with secure, self-service access to high-quality data in a unified platform. 
 
      
 </details>
