@@ -75,7 +75,7 @@ with project_client:
 
     orchestrator_agent = agents_client.create_agent(
         model=gptModelName,
-        name=f"OrchestratorAgent-{solutionName}",
+        name=f"ChatAgent-{solutionName}",
         instructions=orchestrator_agent_instructions
     )
 
