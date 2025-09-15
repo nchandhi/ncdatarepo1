@@ -615,9 +615,17 @@ const Chat: React.FC<ChatProps> = ({
               parsedChartResponse?.error ||
               parsedChartResponse?.choices[0]?.messages[0]?.content
             ) {
-              const errorMsg =
-                parsedChartResponse?.error ||
-                parsedChartResponse?.choices[0]?.messages[0]?.content;
+              let content = parsedChartResponse?.choices[0]?.messages[0]?.content;
+              let displayContent = content;
+              try {
+                const parsed = typeof content === "string" ? JSON.parse(content) : content;
+                if (parsed && typeof parsed === "object" && "answer" in parsed) {
+                  displayContent = parsed.answer;
+                }
+              } catch {
+                displayContent = content;
+              }
+              const errorMsg = parsedChartResponse?.error || displayContent;
               const errorMessage: ChatMessage = {
                 id: generateUUIDv4(),
                 role: ERROR,
