@@ -217,6 +217,7 @@ conn.commit()
 print("Dates adjusted to current date.")
 
 cursor.close()
+conn.close()
 # fabric_headers = get_fabric_headers()
 
 # # get connection Id
