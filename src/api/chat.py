@@ -1,5 +1,31 @@
 """
 Chat API module for handling chat interactions and responses.
+
+This module provides enhanced debugging capabilities:
+
+Environment Variables:
+- DEBUG_MODE: Set to "true" to enable debug-level logging and debug endpoints
+- APPLICATIONINSIGHTS_CONNECTION_STRING: Application Insights connection string
+- AZURE_AI_AGENT_ENDPOINT: Azure AI agent endpoint
+- AZURE_AI_AGENT_API_VERSION: Azure AI agent API version
+- AGENT_ID_SQL: SQL agent ID for database queries
+- AGENT_ID_CHART: Chart agent ID for data visualization
+
+Debug Features:
+- Structured logging with correlation IDs for request tracking
+- Debug-level logging when DEBUG_MODE=true
+- Enhanced exception handling with detailed error context
+- Performance timing measurements
+- Debug endpoints (only available when DEBUG_MODE=true):
+  - GET /debug/status: Service status and configuration
+  - GET /debug/cache: Thread cache inspection
+- OpenTelemetry tracing with enhanced span context
+- Comprehensive error tracking and correlation
+
+Usage:
+- Set DEBUG_MODE=true environment variable to enable detailed debugging
+- Check logs for correlation IDs to trace specific requests
+- Use debug endpoints for troubleshooting when needed
 """
 
 import asyncio
@@ -43,8 +69,22 @@ HOST_INSTRUCTIONS = "Answer questions about call center operations"
 router = APIRouter()
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
+log_level = logging.DEBUG if DEBUG_MODE else logging.INFO
+logging.basicConfig(
+    level=log_level,
+    format='%(asctime)s - %(name)s - %(levelname)s - [%(funcName)s:%(lineno)d] - %(message)s'
+)
 logger = logging.getLogger(__name__)
+
+# Set explicit level for chat module logger
+logger.setLevel(log_level)
+
+# Set debug mode logging for chat module
+if DEBUG_MODE:
+    logger.debug("Chat module initialized in DEBUG mode")
+else:
+    logger.info("Chat module initialized")
 
 # Check if the Application Insights Instrumentation Key is set in the environment variables
 instrumentation_key = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
@@ -69,6 +109,25 @@ logging.getLogger("azure.identity.aio._internal").setLevel(logging.WARNING)
 logging.getLogger("azure.monitor.opentelemetry.exporter.export._base").setLevel(
     logging.WARNING
 )
+
+# Enable debug logging for Azure services in DEBUG mode if needed
+if DEBUG_MODE:
+    logging.getLogger("azure").setLevel(logging.INFO)
+    logging.getLogger("opentelemetry").setLevel(logging.INFO)
+
+
+def log_debug_info(func_name: str, data: dict = None, extra_msg: str = ""):
+    """Utility function to log debug information consistently."""
+    if logger.isEnabledFor(logging.DEBUG):
+        log_msg = f"[{func_name}] {extra_msg}"
+        if data:
+            log_msg += f" - Data: {data}"
+        logger.debug(log_msg)
+
+
+def generate_correlation_id() -> str:
+    """Generate a unique correlation ID for request tracking."""
+    return str(uuid.uuid4())[:8]
 
 
 class ChatWithDataPlugin:
@@ -96,55 +155,94 @@ class ChatWithDataPlugin:
         Returns:
             str: SQL query result or an error message if failed.
         """
-
+        correlation_id = generate_correlation_id()
         query = input
+        
+        logger.debug(f"[{correlation_id}] Starting SQL response generation for query: {query}")
+        log_debug_info("get_sql_response", {
+            "correlation_id": correlation_id,
+            "input_length": len(query),
+            "agent_endpoint": self.ai_project_endpoint,
+            "agent_id": self.foundry_sql_agent_id
+        }, "SQL agent request initiated")
+
         try:
             from history_sql import execute_sql_query
+            
+            logger.debug(f"[{correlation_id}] Creating AI project client")
             project_client = AIProjectClient(
                 endpoint=self.ai_project_endpoint,
                 credential=get_azure_credential(),
                 api_version=self.ai_project_api_version,
             )
 
+            logger.debug(f"[{correlation_id}] Creating agent thread")
             thread = project_client.agents.threads.create()
+            logger.debug(f"[{correlation_id}] Thread created with ID: {thread.id}")
 
+            logger.debug(f"[{correlation_id}] Creating user message in thread")
             project_client.agents.messages.create(
                 thread_id=thread.id,
                 role=MessageRole.USER,
                 content=query,
             )
 
+            logger.debug(f"[{correlation_id}] Starting agent run")
             run = project_client.agents.runs.create_and_process(
                 thread_id=thread.id,
                 agent_id=self.foundry_sql_agent_id,
             )
+            logger.debug(f"[{correlation_id}] Agent run completed with status: {run.status}")
 
             if run.status == "failed":
-                print(f"Run failed: {run.last_error}")
+                error_msg = f"[{correlation_id}] Run failed: {run.last_error}"
+                logger.error(error_msg)
                 return "Details could not be retrieved. Please try again later."
 
+            logger.debug(f"[{correlation_id}] Retrieving messages from thread")
             sql_query = ""
             messages = project_client.agents.messages.list(thread_id=thread.id, order=ListSortOrder.ASCENDING)
             for msg in messages:
                 if msg.role == MessageRole.AGENT and msg.text_messages:
                     sql_query = msg.text_messages[-1].text.value
                     break
+            
             sql_query = sql_query.replace("```sql", '').replace("```", '').strip()
-            logger.info("Generated SQL Query: %s", sql_query)
+            logger.info(f"[{correlation_id}] Generated SQL Query: {sql_query}")
+            
+            logger.debug(f"[{correlation_id}] Executing SQL query")
             answer_raw = await execute_sql_query(sql_query)
+            
             if isinstance(answer_raw, str):
                 answer = answer_raw[:20000] if len(answer_raw) > 20000 else answer_raw
+                if len(answer_raw) > 20000:
+                    logger.debug(f"[{correlation_id}] SQL result truncated from {len(answer_raw)} to 20000 characters")
             else:
                 answer = answer_raw or ""
 
+            logger.debug(f"[{correlation_id}] Cleaning up thread: {thread.id}")
             # Clean up
             project_client.agents.threads.delete(thread_id=thread.id)
+            
+            logger.info(f"[{correlation_id}] SQL response completed successfully")
+            log_debug_info("get_sql_response", {
+                "correlation_id": correlation_id,
+                "sql_query_length": len(sql_query),
+                "result_length": len(str(answer)),
+                "thread_id": thread.id
+            }, "SQL response generation completed")
 
         except Exception as e:
-            print(f"Fabric-SQL-Kernel-error: {e}", flush=True)
+            error_msg = f"[{correlation_id}] Fabric-SQL-Kernel-error: {e}"
+            logger.error(error_msg, exc_info=True)
+            log_debug_info("get_sql_response", {
+                "correlation_id": correlation_id,
+                "error_type": type(e).__name__,
+                "error_message": str(e)
+            }, "SQL response generation failed")
             answer = 'Details could not be retrieved. Please try again later.'
 
-        print(f"fabric-SQL-Kernel-response: {answer}", flush=True)
+        logger.debug(f"[{correlation_id}] Returning SQL response: {answer[:100]}..." if len(str(answer)) > 100 else f"[{correlation_id}] Returning SQL response: {answer}")
         return answer
 
     @kernel_function(name="GenerateChartData", description="Generates Chart.js v4.4.4 compatible JSON data for data visualization requests using current and immediate previous context.")
@@ -152,46 +250,78 @@ class ChatWithDataPlugin:
             self,
             input: Annotated[str, "The user's data visualization request along with relevant conversation history and context needed to generate appropriate chart data"],
     ):
-        query = input
-        query = query.strip()
+        correlation_id = generate_correlation_id()
+        query = input.strip()
+        
+        logger.debug(f"[{correlation_id}] Starting chart data generation for query: {query}")
+        log_debug_info("get_chart_data", {
+            "correlation_id": correlation_id,
+            "input_length": len(query),
+            "agent_endpoint": self.ai_project_endpoint,
+            "chart_agent_id": self.foundry_chart_agent_id
+        }, "Chart data generation request initiated")
+
         try:
+            logger.debug(f"[{correlation_id}] Creating AI project client for chart generation")
             project_client = AIProjectClient(
                 endpoint=self.ai_project_endpoint,
                 credential=get_azure_credential(),
                 api_version=self.ai_project_api_version,
             )
 
+            logger.debug(f"[{correlation_id}] Creating agent thread for chart data")
             thread = project_client.agents.threads.create()
+            logger.debug(f"[{correlation_id}] Chart thread created with ID: {thread.id}")
 
+            logger.debug(f"[{correlation_id}] Creating user message in chart thread")
             project_client.agents.messages.create(
                 thread_id=thread.id,
                 role=MessageRole.USER,
                 content=query,
             )
 
+            logger.debug(f"[{correlation_id}] Starting chart agent run")
             run = project_client.agents.runs.create_and_process(
                 thread_id=thread.id,
                 agent_id=self.foundry_chart_agent_id,
             )
+            logger.debug(f"[{correlation_id}] Chart agent run completed with status: {run.status}")
 
             if run.status == "failed":
-                print(f"Run failed: {run.last_error}")
+                error_msg = f"[{correlation_id}] Chart run failed: {run.last_error}"
+                logger.error(error_msg)
                 return "Details could not be retrieved. Please try again later."
 
+            logger.debug(f"[{correlation_id}] Retrieving chart messages from thread")
             chartdata = ""
             messages = project_client.agents.messages.list(thread_id=thread.id, order=ListSortOrder.ASCENDING)
             for msg in messages:
                 if msg.role == MessageRole.AGENT and msg.text_messages:
                     chartdata = msg.text_messages[-1].text.value
                     break
+            
+            logger.debug(f"[{correlation_id}] Cleaning up chart thread: {thread.id}")
             # Clean up
             project_client.agents.threads.delete(thread_id=thread.id)
+            
+            logger.info(f"[{correlation_id}] Chart data generation completed successfully")
+            log_debug_info("get_chart_data", {
+                "correlation_id": correlation_id,
+                "chart_data_length": len(str(chartdata)),
+                "thread_id": thread.id
+            }, "Chart data generation completed")
 
         except Exception as e:
-            print(f"fabric-Chat-Kernel-error: {e}", flush=True)
+            error_msg = f"[{correlation_id}] fabric-Chat-Kernel-error: {e}"
+            logger.error(error_msg, exc_info=True)
+            log_debug_info("get_chart_data", {
+                "correlation_id": correlation_id,
+                "error_type": type(e).__name__,
+                "error_message": str(e)
+            }, "Chart data generation failed")
             chartdata = 'Details could not be retrieved. Please try again later.'
 
-        print(f"fabric-Chat-Kernel-response: {chartdata}", flush=True)
+        logger.debug(f"[{correlation_id}] Returning chart data: {chartdata[:100]}..." if len(str(chartdata)) > 100 else f"[{correlation_id}] Returning chart data: {chartdata}")
         return chartdata
 
     # @kernel_function(name="ChatWithCustomerSales", description="Provides summaries or detailed explanations of customer sales.")
@@ -301,6 +431,7 @@ class ExpCache(TTLCache):
         """Initialize cache with optional agent for thread cleanup."""
         super().__init__(*args, **kwargs)
         self.agent = agent
+        logger.debug(f"ExpCache initialized - maxsize: {kwargs.get('maxsize', 'unknown')}, ttl: {kwargs.get('ttl', 'unknown')}")
 
     def expire(self, time=None):
         """Remove expired items and delete associated Azure AI threads."""
@@ -310,9 +441,14 @@ class ExpCache(TTLCache):
                 if self.agent:
                     thread = AzureAIAgentThread(client=self.agent.client, thread_id=thread_id)
                     asyncio.create_task(thread.delete())
-                    logger.info("Thread deleted: %s", thread_id)
+                    logger.info("Thread deleted (expired): %s for key: %s", thread_id, key)
+                else:
+                    logger.debug("Thread cleanup skipped (no agent): %s for key: %s", thread_id, key)
             except Exception as e:
-                logger.error("Failed to delete thread for key %s: %s", key, e)
+                logger.error("Failed to delete expired thread for key %s (thread_id: %s): %s", key, thread_id, e)
+        
+        if items:
+            logger.debug(f"ExpCache expired {len(items)} items")
         return items
 
     def popitem(self):
@@ -322,9 +458,11 @@ class ExpCache(TTLCache):
             if self.agent:
                 thread = AzureAIAgentThread(client=self.agent.client, thread_id=thread_id)
                 asyncio.create_task(thread.delete())
-                logger.info("Thread deleted (LRU evict): %s", thread_id)
+                logger.info("Thread deleted (LRU evict): %s for key: %s", thread_id, key)
+            else:
+                logger.debug("Thread cleanup skipped (no agent) for LRU eviction: %s for key: %s", thread_id, key)
         except Exception as e:
-            logger.error("Failed to delete thread for key %s (LRU evict): %s", key, e)
+            logger.error("Failed to delete LRU evicted thread for key %s (thread_id: %s): %s", key, thread_id, e)
         return key, thread_id
 
 
@@ -403,9 +541,15 @@ def track_event_if_configured(event_name: str, event_data: dict):
     """Track event to Application Insights if configured."""
     instrumentation_key = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
     if instrumentation_key:
-        track_event(event_name, event_data)
+        try:
+            track_event(event_name, event_data)
+            logger.debug(f"Event tracked: {event_name} with data keys: {list(event_data.keys())}")
+        except Exception as e:
+            logger.error(f"Failed to track event {event_name}: {e}")
     else:
-        logging.warning("Skipping track_event for %s as Application Insights is not configured", event_name)
+        logger.debug(f"Skipping track_event for {event_name} as Application Insights is not configured")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Event data for {event_name}: {event_data}")
 
 
 def format_stream_response(chat_completion_chunk, history_metadata, apim_request_id):
@@ -455,6 +599,7 @@ def get_thread_cache(agent):
     global thread_cache
     if thread_cache is None:
         thread_cache = ExpCache(maxsize=1000, ttl=3600.0, agent=agent)
+        logger.debug("Global thread cache created with maxsize=1000, ttl=3600.0")
     return thread_cache
 
 
@@ -462,48 +607,82 @@ async def stream_openai_text(conversation_id: str, query: str, agent) -> AsyncGe
     """
     Get a streaming text response from OpenAI.
     """
+    correlation_id = generate_correlation_id()
     thread = None
     complete_response = ""
+    
+    logger.debug(f"[{correlation_id}] Starting stream_openai_text for conversation_id: {conversation_id}")
+    log_debug_info("stream_openai_text", {
+        "correlation_id": correlation_id,
+        "conversation_id": conversation_id,
+        "query_length": len(query) if query else 0
+    }, "Stream request initiated")
+    
     try:
         if not query:
             query = "Please provide a query."
+            logger.debug(f"[{correlation_id}] Empty query provided, using default")
 
         cache = get_thread_cache(agent)
         thread_id = cache.get(conversation_id, None)
+        
+        logger.debug(f"[{correlation_id}] Thread cache lookup - Found: {thread_id is not None}")
 
         if thread_id:
             thread = AzureAIAgentThread(client=agent.client, thread_id=thread_id)
+            logger.debug(f"[{correlation_id}] Using existing thread: {thread_id}")
+        else:
+            logger.debug(f"[{correlation_id}] No existing thread found, will create new one")
 
         truncation_strategy = TruncationObject(type="last_messages", last_messages=4)
+        logger.debug(f"[{correlation_id}] Starting agent.invoke_stream with truncation strategy")
 
+        response_count = 0
         async for response in agent.invoke_stream(messages=query, thread=thread, truncation_strategy=truncation_strategy):
+            response_count += 1
             cache[conversation_id] = response.thread.id
             complete_response += str(response.content)
+            
+            if logger.isEnabledFor(logging.DEBUG) and response_count <= 5:  # Log first 5 responses
+                logger.debug(f"[{correlation_id}] Stream response #{response_count}: {str(response.content)[:100]}...")
+            
             yield response.content
+            
+        logger.debug(f"[{correlation_id}] Stream completed with {response_count} responses, total length: {len(complete_response)}")
 
     except RuntimeError as e:
         complete_response = str(e)
+        error_msg = f"[{correlation_id}] RuntimeError in stream_openai_text: {e}"
+        
         if "Rate limit is exceeded" in str(e):
-            logger.error("Rate limit error: %s", e)
+            logger.error(f"{error_msg} - Rate limit exceeded")
             raise AgentException(f"Rate limit is exceeded. {str(e)}") from e
         else:
-            logger.error("RuntimeError: %s", e)
+            logger.error(f"{error_msg} - Unexpected runtime error", exc_info=True)
             raise AgentException(f"An unexpected runtime error occurred: {str(e)}") from e
 
     except Exception as e:
         complete_response = str(e)
-        logger.error("Error in stream_openai_text: %s", e)
+        error_msg = f"[{correlation_id}] Unexpected error in stream_openai_text: {e}"
+        logger.error(error_msg, exc_info=True)
+        log_debug_info("stream_openai_text", {
+            "correlation_id": correlation_id,
+            "error_type": type(e).__name__,
+            "error_message": str(e),
+            "conversation_id": conversation_id
+        }, "Stream request failed")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error streaming OpenAI text") from e
 
     finally:
         # Provide a fallback response when no data is received from OpenAI.
         if complete_response == "":
-            logger.info("No response received from OpenAI.")
+            logger.warning(f"[{correlation_id}] No response received from OpenAI, providing fallback")
             cache = get_thread_cache(agent)
             thread_id = cache.pop(conversation_id, None)
             if thread_id is not None:
                 corrupt_key = f"{conversation_id}_corrupt_{random.randint(1000, 9999)}"
                 cache[corrupt_key] = thread_id
+                logger.debug(f"[{correlation_id}] Moved corrupted thread to key: {corrupt_key}")
             yield "I cannot answer this question with the current data. Please rephrase or add more details."
 
 
@@ -511,12 +690,25 @@ async def stream_chat_request(request_body, conversation_id, query, agent):
     """
     Handles streaming chat requests.
     """
+    correlation_id = generate_correlation_id()
     history_metadata = request_body.get("history_metadata", {})
+    
+    logger.debug(f"[{correlation_id}] Starting stream_chat_request for conversation: {conversation_id}")
+    log_debug_info("stream_chat_request", {
+        "correlation_id": correlation_id,
+        "conversation_id": conversation_id,
+        "query_length": len(query),
+        "has_history_metadata": bool(history_metadata)
+    }, "Stream chat request initiated")
 
     async def generate():
+        chunk_count = 0
         try:
             assistant_content = ""
+            logger.debug(f"[{correlation_id}] Starting text streaming")
+            
             async for chunk in stream_openai_text(conversation_id, query, agent):
+                chunk_count += 1
                 if isinstance(chunk, dict):
                     chunk = json.dumps(chunk)  # Convert dict to JSON string
                 assistant_content += str(chunk)
@@ -553,7 +745,13 @@ async def stream_chat_request(request_body, conversation_id, query, agent):
                         json.dumps(chat_completion_chunk),
                         object_hook=lambda d: SimpleNamespace(**d),
                     )
+                    
+                    if logger.isEnabledFor(logging.DEBUG) and chunk_count <= 3:  # Log first 3 chunks
+                        logger.debug(f"[{correlation_id}] Yielding chunk #{chunk_count}, content length: {len(assistant_content)}")
+                    
                     yield json.dumps(format_stream_response(completion_chunk_obj, history_metadata, "")) + "\n\n"
+            
+            logger.debug(f"[{correlation_id}] Stream completed with {chunk_count} chunks")
 
         except AgentException as e:
             error_message = str(e)
@@ -562,49 +760,182 @@ async def stream_chat_request(request_body, conversation_id, query, agent):
                 match = re.search(r"Try again in (\d+) seconds", error_message)
                 if match:
                     retry_after = f"{match.group(1)} seconds"
-                logger.error("Rate limit error: %s", error_message)
+                logger.error(f"[{correlation_id}] Rate limit error: {error_message}")
                 error_response = {
-                    "error": f"Rate limit exceeded. Please try again after {retry_after}."
+                    "error": f"Rate limit exceeded. Please try again after {retry_after}.",
+                    "correlation_id": correlation_id
                 }
                 yield json.dumps(error_response) + "\n\n"
             else:
-                logger.error("Agent exception: %s", error_message)
-                error_response = {"error": "An error occurred. Please try again later."}
+                logger.error(f"[{correlation_id}] Agent exception: {error_message}", exc_info=True)
+                error_response = {
+                    "error": "An error occurred. Please try again later.",
+                    "correlation_id": correlation_id
+                }
                 yield json.dumps(error_response) + "\n\n"
 
         except Exception as e:
-            logger.error("Unexpected error: %s", e)
-            error_response = {"error": "An error occurred while processing the request."}
+            logger.error(f"[{correlation_id}] Unexpected error in stream generation: {e}", exc_info=True)
+            log_debug_info("stream_chat_request", {
+                "correlation_id": correlation_id,
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "chunks_processed": chunk_count
+            }, "Stream generation failed")
+            error_response = {
+                "error": "An error occurred while processing the request.",
+                "correlation_id": correlation_id
+            }
             yield json.dumps(error_response) + "\n\n"
 
     return generate()
 
 
-@router.post("/chat")
+@router.get("/debug/status")
+async def debug_status():
+    """Debug endpoint to check the status of the chat service and its dependencies."""
+    if not DEBUG_MODE:
+        raise HTTPException(status_code=404, detail="Debug endpoints are only available in DEBUG mode")
+    
+    correlation_id = generate_correlation_id()
+    logger.debug(f"[{correlation_id}] Debug status endpoint accessed")
+    
+    status_info = {
+        "correlation_id": correlation_id,
+        "timestamp": time.time(),
+        "debug_mode": DEBUG_MODE,
+        "environment": {
+            "ai_project_endpoint": os.getenv("AZURE_AI_AGENT_ENDPOINT", "Not set"),
+            "ai_project_api_version": os.getenv("AZURE_AI_AGENT_API_VERSION", "Not set"),
+            "sql_agent_id": os.getenv("AGENT_ID_SQL", "Not set"),
+            "chart_agent_id": os.getenv("AGENT_ID_CHART", "Not set"),
+            "app_insights_configured": bool(os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"))
+        },
+        "cache_stats": {
+            "cache_exists": thread_cache is not None,
+            "cache_size": len(thread_cache) if thread_cache else 0,
+            "cache_maxsize": thread_cache.maxsize if thread_cache else None,
+            "cache_ttl": thread_cache.ttl if thread_cache else None
+        },
+        "logging": {
+            "logger_level": logger.level,
+            "logger_name": logger.name,
+            "handlers_count": len(logger.handlers)
+        }
+    }
+    
+    logger.debug(f"[{correlation_id}] Debug status compiled successfully")
+    return status_info
+
+
+@router.get("/debug/cache")
+async def debug_cache():
+    """Debug endpoint to inspect the thread cache."""
+    if not DEBUG_MODE:
+        raise HTTPException(status_code=404, detail="Debug endpoints are only available in DEBUG mode")
+    
+    correlation_id = generate_correlation_id()
+    logger.debug(f"[{correlation_id}] Debug cache endpoint accessed")
+    
+    if not thread_cache:
+        return {
+            "correlation_id": correlation_id,
+            "cache_status": "not_initialized",
+            "message": "Thread cache has not been initialized yet"
+        }
+    
+    cache_info = {
+        "correlation_id": correlation_id,
+        "timestamp": time.time(),
+        "cache_size": len(thread_cache),
+        "cache_maxsize": thread_cache.maxsize,
+        "cache_ttl": thread_cache.ttl,
+        "cache_keys": list(thread_cache.keys()) if logger.isEnabledFor(logging.DEBUG) else "Debug level required",
+        "cache_agent_type": type(thread_cache.agent).__name__ if thread_cache.agent else "No agent"
+    }
+    
+    logger.debug(f"[{correlation_id}] Cache debug info compiled successfully")
+    return cache_info
 async def conversation(request: Request):
     """Handle chat requests - streaming text or chart generation based on query keywords."""
+    correlation_id = generate_correlation_id()
+    request_start_time = time.time()
+    
+    logger.debug(f"[{correlation_id}] Starting conversation endpoint")
+    
     try:
         # Get the request JSON and last RAG response from the client
         request_json = await request.json()
         last_rag_response = request_json.get("last_rag_response")
         conversation_id = request_json.get("conversation_id")
-        logger.info("Received last_rag_response: %s", last_rag_response)
-
-        query = request_json.get("messages")[-1].get("content")
+        query = request_json.get("messages")[-1].get("content") if request_json.get("messages") else ""
+        
+        logger.info(f"[{correlation_id}] Conversation request - ID: {conversation_id}, Query length: {len(query)}")
+        logger.debug(f"[{correlation_id}] Last RAG response: {last_rag_response}")
+        
+        log_debug_info("conversation", {
+            "correlation_id": correlation_id,
+            "conversation_id": conversation_id,
+            "query_length": len(query),
+            "has_last_rag_response": last_rag_response is not None,
+            "messages_count": len(request_json.get("messages", []))
+        }, "Processing conversation request")
 
         agent = request.app.state.orchestrator_agent
+        logger.debug(f"[{correlation_id}] Retrieved orchestrator agent: {type(agent).__name__}")
 
+        logger.debug(f"[{correlation_id}] Starting stream_chat_request")
         result = await stream_chat_request(request_json, conversation_id, query, agent)
+        
+        # Calculate processing time
+        processing_time = time.time() - request_start_time
+        logger.info(f"[{correlation_id}] Conversation completed successfully in {processing_time:.2f}s")
+        
         track_event_if_configured(
             "ChatStreamSuccess",
-            {"conversation_id": conversation_id, "query": query}
+            {
+                "conversation_id": conversation_id, 
+                "query": query,
+                "correlation_id": correlation_id,
+                "processing_time": processing_time
+            }
         )
+        
         return StreamingResponse(result, media_type="application/json-lines")
 
     except Exception as ex:
-        logger.exception("Error in conversation endpoint: %s", str(ex))
+        processing_time = time.time() - request_start_time
+        error_msg = f"[{correlation_id}] Error in conversation endpoint after {processing_time:.2f}s: {str(ex)}"
+        logger.exception(error_msg)
+        
+        log_debug_info("conversation", {
+            "correlation_id": correlation_id,
+            "error_type": type(ex).__name__,
+            "error_message": str(ex),
+            "processing_time": processing_time
+        }, "Conversation request failed")
+        
+        # Enhance OpenTelemetry span with debug info
         span = trace.get_current_span()
         if span is not None:
             span.record_exception(ex)
             span.set_status(Status(StatusCode.ERROR, str(ex)))
-        return JSONResponse(content={"error": "An internal error occurred while processing the conversation."}, status_code=500)
+            span.set_attribute("correlation_id", correlation_id)
+            span.set_attribute("processing_time", processing_time)
+            
+        track_event_if_configured(
+            "ChatStreamError",
+            {
+                "error": str(ex),
+                "correlation_id": correlation_id,
+                "processing_time": processing_time
+            }
+        )
+        
+        return JSONResponse(
+            content={
+                "error": "An internal error occurred while processing the conversation.",
+                "correlation_id": correlation_id
+            }, 
+            status_code=500
+        )
