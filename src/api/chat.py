@@ -37,8 +37,8 @@ from auth.azure_credential_utils import get_azure_credential
 load_dotenv()
 
 # Constants
-HOST_NAME = "CKM"
-HOST_INSTRUCTIONS = "Answer questions about call center operations"
+HOST_NAME = "Agentic Applications for Unified Data Foundation"
+HOST_INSTRUCTIONS = "Answer questions about Sales, Products and Orders data."
 
 router = APIRouter()
 
