@@ -88,14 +88,9 @@ async def get_fabric_db_connection():
     fabric_sql_connection_string17 = f"DRIVER={driver17};SERVER={server};DATABASE={database};UID={api_uid};Authentication=ActiveDirectoryMSI"
     
 
-    try:
-        import importlib.metadata
-        pyodbc_version = importlib.metadata.version("pyodbc")
-        logging.info("Fabric-SQL: Using pyodbc version: %s", pyodbc_version)
+    try:       
         conn = None
         try:            
-            logging.info("FABRIC-SQL: Using ODBC Driver 18")
-            # connection_string = ""
             if app_env == 'dev':
                 async with AzureCliCredential() as credential:
                     token = await credential.get_token("https://database.windows.net/.default")
@@ -110,10 +105,8 @@ async def get_fabric_db_connection():
                     conn = pyodbc.connect(connection_string, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct})
             else:
                 # connection_string = f"DRIVER={driver};SERVER={server};DATABASE={database};UID={api_uid};Authentication=ActiveDirectoryMSI;"
-                # connection_string = fabric_sql_connection_string18
                 conn = pyodbc.connect(fabric_sql_connection_string18)
         except Exception as e:
-            logging.info("FABRIC-SQL:Failed to connect using ODBC Driver 18, trying with ODBC Driver 17: %s", e)
             if app_env == 'dev':
                 async with AzureCliCredential() as credential:
                     token = await credential.get_token("https://database.windows.net/.default")

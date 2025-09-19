@@ -85,7 +85,7 @@ var solutionPrefix = 'da${padLeft(take(uniqueId, 12), 12, '0')}'
 
 var acrName = 'dataagentscontainerreg'
 
-var baseUrl = 'https://raw.githubusercontent.com/nchandhi/ncdatarepo1/ag-odbc18-agent-cleanup/'
+var baseUrl = 'https://raw.githubusercontent.com/nchandhi/ncdatarepo1/main/'
 
 //Get the current deployer's information
 var deployerInfo = deployer()
