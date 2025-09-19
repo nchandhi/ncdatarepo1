@@ -52,7 +52,7 @@ hooks:
         backendApiName="$API_APP_NAME"
         resourceGroup="$RESOURCE_GROUP_NAME"
 
-        echo -e "\nRun the following 2 commands in the bash terminal to create agents and fabric items respectively:"
+        echo "\nRun the following 2 commands in the bash terminal to create agents and fabric items respectively:"
         echo "bash ./run_create_agents_scripts.sh"
 
         cmdLine="bash ./run_fabric_items_scripts.sh $workspaceId $solutionName $aiServiceName $backendApiPID $backendApiUID $backendApiName $resourceGroup"
