@@ -180,6 +180,8 @@ Once you've opened the project in [Codespaces](#github-codespaces), [Dev Contain
 
 5. Once the deployment has completed successfully, copy the bash script from the terminal (ex. `bash ./run_fabric_items_scripts.sh <fabric-workspaceId> <solutionname> <backend-api-mid-principal> <backend-api-name> <resourcegroup>`) for later use. 
 
+> **Note**: if you are running this deployment in GitHub Codespaces or VS Code Dev Container skip to step 7. 
+
 6. Create and activate a virtual environment 
   
   ```shell
