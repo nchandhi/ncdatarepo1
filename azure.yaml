@@ -34,8 +34,8 @@ hooks:
         echo $WEB_APP_URL
 
         echo "\nRun the following 2 commands in the bash terminal to create agents and fabric items respectively:"
-        echo "bash ./run_create_agents_scripts.sh" -ForegroundColor Cyan
-        echo "\nbash ./run_fabric_items_scripts.sh <fabric_workspace_id>" -ForegroundColor Cyan
+        echo "bash ./run_create_agents_scripts.sh"
+        echo "\nbash ./run_fabric_items_scripts.sh <fabric_workspace_id>"
 
       shell: sh
       continueOnError: false
