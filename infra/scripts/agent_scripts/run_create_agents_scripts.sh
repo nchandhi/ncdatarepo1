@@ -84,8 +84,8 @@ fi
 requirementFile="requirements.txt"
 
 # Download and install Python requirements
-pip install --upgrade pip
-pip install --quiet -r "$requirementFile"
+python -m pip install --upgrade pip
+python -m pip install --quiet -r "$requirementFile"
 
 # Execute the Python scripts
 echo "Running Python agents creation script..."
