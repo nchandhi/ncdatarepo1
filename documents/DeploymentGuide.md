@@ -209,7 +209,7 @@ Once you've opened the project in [Codespaces](#github-codespaces), [Dev Contain
 
   If you don't have azd env then you need to pass parameters along with the command. Then the command will look like the following:
   ```Shell
-  bash ./run_create_agents_scripts.sh <managed-identity-client-id> <project-endpoint> <solution-name> <gpt-model-name> <ai-foundry-resource-id> <api-app-name> <resource-group>
+  bash ./run_create_agents_scripts.sh <project-endpoint> <solution-name> <gpt-model-name> <ai-foundry-resource-id> <api-app-name> <resource-group>
   ```
 
 10. Open a Git Bash terminal and navigate to the fabric_scripts folder
