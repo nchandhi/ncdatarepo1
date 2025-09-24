@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "CsApi": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "http://localhost:8000",
+      "environmentVariables": {
+        "AGENT_ID_CHART": "asst_Lu7vyGlFb8m8c7VIBUqhOyFa",
+        "AGENT_ID_ORCHESTRATOR": "asst_9RWrT66gh2GZeri42gtUpbwA",
+        "AGENT_ID_SQL": "asst_r7Ire1ARCmlhLRLSHQT4XjnQ",
+        "API_UID": "166df440-c4be-48e0-951d-4455df69cff8",
+        "APP_ENV": "dev",
+        "APPINSIGHTS_INSTRUMENTATIONKEY": "51da3262-850e-4e84-a130-7948366f9264",
+        "APPLICATIONINSIGHTS_CONNECTION_STRING": "InstrumentationKey=51da3262-850e-4e84-a130-7948366f9264;IngestionEndpoint=https://francecentral-1.in.applicationinsights.azure.com/;LiveEndpoint=https://francecentral.livediagnostics.monitor.azure.com/;ApplicationId=5a898db2-984e-4806-bf17-14f2c0546231",
+        "AZURE_AI_AGENT_API_VERSION": "2025-05-01",
+        "AZURE_AI_AGENT_ENDPOINT": "https://aisa-day6gqh3xxu5gc.services.ai.azure.com/api/projects/aifp-day6gqh3xxu5gc",
+        "AZURE_AI_AGENT_MODEL_DEPLOYMENT_NAME": "gpt-4o-mini",
+        "AZURE_OPENAI_API_VERSION": "2025-01-01-preview",
+        "AZURE_OPENAI_DEPLOYMENT_MODEL": "gpt-4o-mini",
+        "AZURE_OPENAI_ENDPOINT": "https://aisa-day6gqh3xxu5gc.openai.azure.com/",
+        "AZURE_OPENAI_RESOURCE": "aisa-day6gqh3xxu5gc",
+        "DISPLAY_CHART_DEFAULT": "False",
+        "DUMMY_TEST": "True",
+        "FABRIC_SQL_CONNECTION_STRING": "DRIVER={ODBC Driver 18 for SQL Server};SERVER=ccllgusga4suzkb52t4j7lpn7y-rah2heos5rzepgz2skgzjnvte4.database.fabric.microsoft.com;DATABASE={retail_sqldatabase_day6gqh3xxu5gc-37d308aa-4d62-43d1-bbdb-b03f8bd088c6};UID=166df440-c4be-48e0-951d-4455df69cff8;Authentication=ActiveDirectoryMSI",
+        "FABRIC_SQL_DATABASE": "retail_sqldatabase_day6gqh3xxu5gc-37d308aa-4d62-43d1-bbdb-b03f8bd088c6",
+        "FABRIC_SQL_SERVER": "ccllgusga4suzkb52t4j7lpn7y-rah2heos5rzepgz2skgzjnvte4.database.fabric.microsoft.com",
+        "REACT_APP_LAYOUT_CONFIG": "{\n  \"appConfig\": {\n      \"CHAT_CHATHISTORY\": {\n        \"CHAT\": 70,\n        \"CHATHISTORY\": 30\n      }\n    }\n  }\n}",
+        "SOLUTION_NAME": "day6gqh3xxu5gc",
+        "USE_AI_PROJECT_CLIENT": "True",
+        "USE_CHAT_HISTORY_ENABLED": "True",
+        "WEBSITE_HTTPLOGGING_RETENTION_DAYS": "1"
+      }
+    }
+  }
+}
