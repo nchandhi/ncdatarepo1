@@ -28,7 +28,21 @@ namespace CsApi.Services
             var client = AzureAIAgent.CreateAgentsClient(endpoint, new DefaultAzureCredential());
             var definition = await client.Administration.GetAgentAsync(agentId);
             // Cast plugins to IEnumerable<KernelPlugin>
-            var pluginList = plugins != null ? new List<KernelPlugin>(plugins as IEnumerable<KernelPlugin> ?? new List<KernelPlugin>()) : new List<KernelPlugin>();
+            var pluginList = new List<KernelPlugin>();
+            if (plugins != null)
+            {
+                foreach (var p in plugins)
+                {
+                    if (p is KernelPlugin kp)
+                        pluginList.Add(kp);
+                    else if (p != null)
+                    {
+                        // Try to create plugin from type if not already a KernelPlugin
+                        var plugin = Microsoft.SemanticKernel.KernelPluginFactory.CreateFromObject(p);
+                        pluginList.Add(plugin);
+                    }
+                }
+            }
             var agent = new AzureAIAgent(definition, client, pluginList);
             logger.LogInformation($"AzureAIAgentOrchestrator initialized for agentId: {agentId}");
             return new AzureAIAgentOrchestrator(agent);

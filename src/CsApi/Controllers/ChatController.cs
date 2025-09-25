@@ -18,37 +18,62 @@ public class ChatController : ControllerBase
     public ChatController(IChatService chatService, IUserContextAccessor userContextAccessor, ISqlConversationRepository sqlRepo)
     { _chatService = chatService; _userContextAccessor = userContextAccessor; _sqlRepo = sqlRepo; }
 
+    /// <summary>
+    /// Streaming chat endpoint. Invokes the AzureAIAgent with plugin support (e.g., ChatWithDataPlugin).
+    /// If the LLM determines a function call is needed (e.g., SQL or chart), it will call the plugin automatically.
+    /// The response is streamed as JSON lines, matching the FastAPI /chat endpoint.
+    /// </summary>
     [HttpPost("chat")]
     public async Task Chat([FromBody] ChatRequest request, [FromServices] AzureAIAgentOrchestrator orchestrator, CancellationToken ct)
     {
         Response.ContentType = "application/json-lines";
-        if (string.IsNullOrWhiteSpace(request.Query))
+        Console.WriteLine("Processing chat request...");
+        Console.WriteLine("Request Body: " + JsonSerializer.Serialize(request));
+        var query = request.Messages?.LastOrDefault()?.Content;
+        if (string.IsNullOrWhiteSpace(query))
         {
             await Response.WriteAsync(JsonSerializer.Serialize(new { error = "query is required" }) + "\n\n", ct);
             return;
         }
+        Console.WriteLine($"Received chat request: {query}");
         var userId = Request.Headers["x-ms-client-principal-id"].FirstOrDefault();
+        //if (string.IsNullOrWhiteSpace(userId))
+        //{
+        //    await Response.WriteAsync(JsonSerializer.Serialize(new { error = "Missing user id header" }) + "\n\n", ct);
+        //    return;
+        //}
         var convId = await _sqlRepo.EnsureConversationAsync(userId, request.ConversationId, title: string.Empty, ct);
-        var userMessage = new ChatMessage { Id = Guid.NewGuid().ToString(), Role = "user", Content = request.Query, CreatedAt = DateTime.UtcNow };
+        var userMessage = new ChatMessage { Id = Guid.NewGuid().ToString(), Role = "user", Content = query, CreatedAt = DateTime.UtcNow };
         await _sqlRepo.AddMessageAsync(userId, convId, userMessage, ct);
 
-        // Use orchestrator agent for RAG/AI response
+        // Use orchestrator agent for RAG/AI response with plugin support
         var agent = orchestrator.Agent;
         var thread = new Microsoft.SemanticKernel.Agents.AzureAI.AzureAIAgentThread(agent.Client);
-        var message = new Microsoft.SemanticKernel.ChatMessageContent(Microsoft.SemanticKernel.ChatCompletion.AuthorRole.User, request.Query);
+        var message = new Microsoft.SemanticKernel.ChatMessageContent(Microsoft.SemanticKernel.ChatCompletion.AuthorRole.User, query);
         var acc = "";
-        await foreach (var response in agent.InvokeStreamingAsync(message, thread))
+        try
         {
-            acc += response.ToString();
-            var envelope = new
+            await foreach (var response in agent.InvokeStreamingAsync(message, thread))
             {
-                id = convId,
-                model = "rag-model",
-                created = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                choices = new[] { new { messages = new[] { new { role = "assistant", content = acc } }, delta = new { role = "assistant", content = acc } } }
-            };
-            await Response.WriteAsync(JsonSerializer.Serialize(envelope) + "\n\n", ct);
-            await Response.Body.FlushAsync(ct);
+                // If the LLM chooses to call a plugin function (e.g., ChatWithSQLDatabase),
+                // the plugin will be invoked automatically and the result included in the stream.
+                acc += response.ToString();
+                var envelope = new
+                {
+                    id = convId,
+                    model = "rag-model",
+                    created = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                    choices = new[] { new { messages = new[] { new { role = "assistant", content = acc } }, delta = new { role = "assistant", content = acc } } }
+                };
+                await Response.WriteAsync(JsonSerializer.Serialize(envelope) + "\n\n", ct);
+                await Response.Body.FlushAsync(ct);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Stream error as JSON line
+            var errorEnvelope = new { error = ex.Message };
+            await Response.WriteAsync(JsonSerializer.Serialize(errorEnvelope) + "\n\n", ct);
         }
         var assistant = new ChatMessage { Id = Guid.NewGuid().ToString(), Role = "assistant", Content = acc, CreatedAt = DateTime.UtcNow };
         await _sqlRepo.AddMessageAsync(userId, convId, assistant, ct);

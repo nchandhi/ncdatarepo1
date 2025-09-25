@@ -20,7 +20,7 @@ public class ChatService : IChatService
         var writer = new StreamWriter(ms, Encoding.UTF8, leaveOpen: true);
         var message = new ChatMessage
         {
-            Content = $"Echo: {request.Query}",
+            Content = $"Echo: {request.Messages?.LastOrDefault()?.Content}",
             Role = "assistant",
             CreatedAt = DateTime.UtcNow
         };

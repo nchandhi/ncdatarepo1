@@ -110,21 +110,41 @@ public class SqlConversationRepository : ISqlConversationRepository
 
     public async Task AddMessageAsync(string userId, string conversationId, ChatMessage message, CancellationToken ct)
     {
-    const string sql = @"INSERT INTO hst_conversation_messages (userId, conversation_id, role, content_id, content, citations, feedback, createdAt, updatedAt) 
-VALUES (@u, @c, @r, @cid, @content, @citations, @feedback, @now, @now); UPDATE hst_conversations SET updatedAt=@now WHERE conversation_id=@c;";
     var now = DateTime.UtcNow.ToString("o");
     using var conn = await CreateConnectionAsync();
-    using (var cmd = new SqlCommand(sql, (SqlConnection)conn))
+    string sql;
+    if (!string.IsNullOrEmpty(userId))
     {
-        cmd.Parameters.AddWithValue("@u", userId);
-        cmd.Parameters.AddWithValue("@c", conversationId);
-        cmd.Parameters.AddWithValue("@r", message.Role);
-        cmd.Parameters.AddWithValue("@cid", message.Id);
-        cmd.Parameters.AddWithValue("@content", message.Content ?? string.Empty);
-        cmd.Parameters.AddWithValue("@citations", JsonSerializer.Serialize(message.Citations ?? new List<string>()));
-        cmd.Parameters.AddWithValue("@feedback", message.Feedback ?? string.Empty);
-        cmd.Parameters.AddWithValue("@now", now);
-        cmd.ExecuteNonQuery();
+        sql = @"INSERT INTO hst_conversation_messages (userId, conversation_id, role, content_id, content, citations, feedback, createdAt, updatedAt) 
+VALUES (@u, @c, @r, @cid, @content, @citations, @feedback, @now, @now); UPDATE hst_conversations SET updatedAt=@now WHERE conversation_id=@c;";
+        using (var cmd = new SqlCommand(sql, (SqlConnection)conn))
+        {
+            cmd.Parameters.AddWithValue("@u", userId);
+            cmd.Parameters.AddWithValue("@c", conversationId);
+            cmd.Parameters.AddWithValue("@r", message.Role);
+            cmd.Parameters.AddWithValue("@cid", message.Id);
+            cmd.Parameters.AddWithValue("@content", message.Content ?? string.Empty);
+            cmd.Parameters.AddWithValue("@citations", JsonSerializer.Serialize(message.Citations ?? new List<string>()));
+            cmd.Parameters.AddWithValue("@feedback", message.Feedback ?? string.Empty);
+            cmd.Parameters.AddWithValue("@now", now);
+            cmd.ExecuteNonQuery();
+        }
+    }
+    else
+    {
+        sql = @"INSERT INTO hst_conversation_messages (conversation_id, role, content_id, content, citations, feedback, createdAt, updatedAt) 
+VALUES (@c, @r, @cid, @content, @citations, @feedback, @now, @now); UPDATE hst_conversations SET updatedAt=@now WHERE conversation_id=@c;";
+        using (var cmd = new SqlCommand(sql, (SqlConnection)conn))
+        {
+            cmd.Parameters.AddWithValue("@c", conversationId);
+            cmd.Parameters.AddWithValue("@r", message.Role);
+            cmd.Parameters.AddWithValue("@cid", message.Id);
+            cmd.Parameters.AddWithValue("@content", message.Content ?? string.Empty);
+            cmd.Parameters.AddWithValue("@citations", JsonSerializer.Serialize(message.Citations ?? new List<string>()));
+            cmd.Parameters.AddWithValue("@feedback", message.Feedback ?? string.Empty);
+            cmd.Parameters.AddWithValue("@now", now);
+            cmd.ExecuteNonQuery();
+        }
     }
     }
 
@@ -200,17 +220,6 @@ VALUES (@u, @c, @r, @cid, @content, @citations, @feedback, @now, @now); UPDATE h
             {
                 var role = reader.IsDBNull(0) ? null : reader.GetString(0);
                 var contentRaw = reader.IsDBNull(1) ? null : reader.GetString(1);
-                object contentObj = contentRaw;
-                if (!string.IsNullOrWhiteSpace(contentRaw))
-                {
-                    try
-                    {
-                        // Try to parse as JSON object or array
-                        using var doc = JsonDocument.Parse(contentRaw);
-                        contentObj = doc.RootElement.Clone();
-                    }
-                    catch { contentObj = contentRaw; }
-                }
                 var citationsStr = reader.IsDBNull(2) ? null : reader.GetString(2);
                 var feedback = reader.IsDBNull(3) ? null : reader.GetString(3);
                 List<string> citationsList = new();
@@ -221,7 +230,7 @@ VALUES (@u, @c, @r, @cid, @content, @citations, @feedback, @now, @now); UPDATE h
                 list.Add(new ChatMessage
                 {
                     Role = role,
-                    Content = contentObj,
+                    Content = contentRaw ?? string.Empty,
                     Citations = citationsList,
                     Feedback = feedback
                 });

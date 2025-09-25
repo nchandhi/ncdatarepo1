@@ -2,6 +2,7 @@ using Azure.Identity;
 using CsApi.Auth;
 using CsApi.Interfaces;
 using CsApi.Middleware;
+using CsApi.Plugins;
 using CsApi.Repositories;
 using CsApi.Services;
 using Microsoft.AspNetCore.Diagnostics;
@@ -62,8 +63,13 @@ builder.Services.AddScoped<ISqlConversationRepository, SqlConversationRepository
 // Agent kernel service for SQL and chart agent integration
 builder.Services.AddScoped<IAgentKernelService, AgentKernelService>();
 
-// Register ChatWithDataPlugin for agent plugins
-builder.Services.AddSingleton<ChatWithDataPlugin>();
+// Register ChatWithDataPlugin for agent plugins (with IAgentKernelService DI)
+builder.Services.AddSingleton<ChatWithDataPlugin>(sp =>
+    new ChatWithDataPlugin(
+        sp.GetRequiredService<IAgentKernelService>(),
+        sp.GetRequiredService<IConfiguration>(),
+        sp.GetRequiredService<ILogger<ChatWithDataPlugin>>()
+    ));
 
 // Register orchestrator agent as singleton (initialized at startup)
 builder.Services.AddSingleton<AzureAIAgentOrchestrator>(sp =>

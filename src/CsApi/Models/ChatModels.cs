@@ -5,14 +5,14 @@ namespace CsApi.Models;
 public class ChatRequest
 {
     [JsonPropertyName("conversation_id")] public string? ConversationId { get; set; }
-    [JsonPropertyName("query")] public string? Query { get; set; }
+    [JsonPropertyName("messages")] public List<ChatMessage>? Messages { get; set; }
 }
 
 public class ChatMessage
 {
     [JsonPropertyName("id")] public string Id { get; set; } = Guid.NewGuid().ToString();
     [JsonPropertyName("role")] public string Role { get; set; } = "user";
-    [JsonPropertyName("content")] public object Content { get; set; } = string.Empty;
+    [JsonPropertyName("content")] public string Content { get; set; } = string.Empty;
     [JsonPropertyName("created_at")] public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     [JsonPropertyName("citations")] public List<string> Citations { get; set; } = new();
     [JsonPropertyName("feedback")] public string Feedback { get; set; } = string.Empty;
