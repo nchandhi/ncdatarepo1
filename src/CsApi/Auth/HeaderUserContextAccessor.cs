@@ -25,7 +25,7 @@ public class HeaderUserContextAccessor : IUserContextAccessor
             // Development fallback sample user (mirrors Python sample_user)
             return new UserContext
             {
-                UserPrincipalId = "4127d10e-6033-41d6-99f1-4eb7d1811876",
+                UserPrincipalId = "00000000-0000-0000-0000-000000000000",
                 UserName = "sample.user@contoso.com",
                 AuthProvider = "aad",
                 AuthToken = null,
