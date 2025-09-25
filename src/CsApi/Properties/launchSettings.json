@@ -5,33 +5,7 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,
-      "applicationUrl": "http://localhost:8000",
-      "environmentVariables": {
-       "AGENT_ID_CHART":"",
-        "AGENT_ID_ORCHESTRATOR":"",
-        "AGENT_ID_SQL":"",
-        "API_UID":"",
-        "APP_ENV":"dev",
-        "APPINSIGHTS_INSTRUMENTATIONKEY":"",
-        "APPLICATIONINSIGHTS_CONNECTION_STRING":"",
-        "AZURE_AI_AGENT_API_VERSION":"2025-05-01",
-        "AZURE_AI_AGENT_ENDPOINT":"",
-        "AZURE_AI_AGENT_MODEL_DEPLOYMENT_NAME":"gpt-4o-mini",
-        "AZURE_OPENAI_API_VERSION":"2025-01-01-preview",
-        "AZURE_OPENAI_DEPLOYMENT_MODEL":"gpt-4o-mini",
-        "AZURE_OPENAI_ENDPOINT":"",
-        "AZURE_OPENAI_RESOURCE":"",
-        "DISPLAY_CHART_DEFAULT":"False",
-        "DUMMY_TEST":"True",
-        "FABRIC_SQL_CONNECTION_STRING":"",
-        "FABRIC_SQL_DATABASE":"",
-        "FABRIC_SQL_SERVER":"",
-        "REACT_APP_LAYOUT_CONFIG":"{\n  \"appConfig\": {\n      \"CHAT_CHATHISTORY\": {\n        \"CHAT\": 70,\n        \"CHATHISTORY\": 30\n      }\n    }\n  }\n}",
-        "SOLUTION_NAME":"",
-        "USE_AI_PROJECT_CLIENT":"True",
-        "USE_CHAT_HISTORY_ENABLED":"True",
-        "WEBSITE_HTTPLOGGING_RETENTION_DAYS":"1"
-      }
+      "applicationUrl": "http://localhost:8000"
     }
   }
 }

@@ -29,7 +29,7 @@ public class SqlConversationRepository : ISqlConversationRepository
 
     private async Task<IDbConnection> CreateConnectionAsync()
     {
-        var appEnv = Environment.GetEnvironmentVariable("APP_ENV")?.ToLower() ?? "prod";
+        var appEnv = (_config["APP_ENV"] ?? "prod").ToLower();
 
         // In prod, fall back to connection string from config (if needed)
         if (appEnv == "prod")
