@@ -1,3 +1,4 @@
+using CsApi.Repositories; 
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Functions;
 using System.ComponentModel;
@@ -10,12 +11,16 @@ namespace CsApi.Plugins
         private readonly IConfiguration _config;
         private readonly ILogger<ChatWithDataPlugin> _logger;
         private readonly Services.IAgentKernelService _kernelService;
+        private readonly ISqlConversationRepository _sqlConversationRepository;
 
-        public ChatWithDataPlugin(Services.IAgentKernelService kernelService, IConfiguration config, ILogger<ChatWithDataPlugin> logger)
+        public ChatWithDataPlugin(Services.IAgentKernelService kernelService, 
+            IConfiguration config, ILogger<ChatWithDataPlugin> logger,
+            ISqlConversationRepository sqlConversationRepository)
         {
             _kernelService = kernelService;
             _config = config;
             _logger = logger;
+            _sqlConversationRepository = sqlConversationRepository;
         }
 
         [KernelFunction("ChatWithSQLDatabase")]
@@ -83,7 +88,8 @@ namespace CsApi.Plugins
                 Console.WriteLine("SQL QUERY GENERATED: " + sqlQuery);
 
                 // Call runSqlQuery (delegate to kernel service or implement here)
-                var answerRaw = await _kernelService.GetSqlResponseAsync(sqlQuery);
+                var answerRaw = await _sqlConversationRepository.ExecuteChatQuery(sqlQuery, CancellationToken.None);
+                //var answerRaw = await _kernelService.GetSqlResponseAsync(sqlQuery);
                 string answer = answerRaw?.Length > 20000 ? answerRaw.Substring(0, 20000) : answerRaw;
                 if (string.IsNullOrWhiteSpace(answer))
                     answer = "No results found.";

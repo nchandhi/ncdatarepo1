@@ -17,6 +17,7 @@ public interface ISqlConversationRepository
     Task<bool?> DeleteAsync(string userId, string conversationId, CancellationToken ct);
     Task<int?> DeleteAllAsync(string userId, CancellationToken ct);
     Task<bool?> RenameAsync(string userId, string conversationId, string title, CancellationToken ct);
+    Task<string> ExecuteChatQuery(string query, CancellationToken ct);
 }
 
 public class SqlConversationRepository : ISqlConversationRepository
@@ -362,4 +363,31 @@ VALUES (@c, @r, @cid, @content, @citations, @feedback, @now, @now); UPDATE hst_c
         var rows = updateCmd.ExecuteNonQuery();
         return rows > 0;
     }
+
+    public async Task<string> ExecuteChatQuery(string query, CancellationToken ct)
+    {
+        var results = new List<Dictionary<string, object>>();
+        try
+        {
+            using var conn = await CreateConnectionAsync();
+            using var cmd = new SqlCommand(query, (SqlConnection)conn);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                var row = new Dictionary<string, object>();
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    var colName = reader.GetName(i);
+                    var value = reader.IsDBNull(i) ? null : reader.GetValue(i);
+                    row[colName] = value;
+                }
+                results.Add(row);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error executing chat query");
+        }
+        return JsonSerializer.Serialize(results);
+    }    
 }

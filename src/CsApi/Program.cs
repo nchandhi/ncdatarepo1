@@ -68,7 +68,8 @@ builder.Services.AddSingleton<ChatWithDataPlugin>(sp =>
     new ChatWithDataPlugin(
         sp.GetRequiredService<IAgentKernelService>(),
         sp.GetRequiredService<IConfiguration>(),
-        sp.GetRequiredService<ILogger<ChatWithDataPlugin>>()
+        sp.GetRequiredService<ILogger<ChatWithDataPlugin>>(),
+        sp.GetRequiredService<ISqlConversationRepository>()
     ));
 
 // Register orchestrator agent as singleton (initialized at startup)
