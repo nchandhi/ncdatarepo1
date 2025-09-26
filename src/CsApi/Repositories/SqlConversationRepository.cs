@@ -43,7 +43,7 @@ public class SqlConversationRepository : ISqlConversationRepository
         }
 
         // In dev, use Azure AD authentication (no username/password required)
-        var db = _config["FABRIC_SQL_DATABASE"];
+        var db = _config["FABRIC_SQL_DATABASE"]?.Trim(' ', '{', '}');
         var server = _config["FABRIC_SQL_SERVER"];
 
         Console.WriteLine($"Using Azure CLI/Azure AD authentication for {server}, database {db}");

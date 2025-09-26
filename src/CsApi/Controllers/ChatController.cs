@@ -54,16 +54,19 @@ public class ChatController : ControllerBase
         try
         {
             await foreach (var response in agent.InvokeStreamingAsync(message, thread))
-            {
+            {   
                 // If the LLM chooses to call a plugin function (e.g., ChatWithSQLDatabase),
                 // the plugin will be invoked automatically and the result included in the stream.
-                acc += response.ToString();
+                // Extract the actual content from the streaming response (using .Message.Content)
+                var content = (response?.Message as Microsoft.SemanticKernel.StreamingChatMessageContent)?.Content ?? string.Empty;
+                acc += content;
                 var envelope = new
                 {
                     id = convId,
                     model = "rag-model",
                     created = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                    choices = new[] { new { messages = new[] { new { role = "assistant", content = acc } }, delta = new { role = "assistant", content = acc } } }
+                    @object = "extensions.chat.completion.chunk",
+                    choices = new[] { new { messages = new[] { new { role = "assistant", content = acc } } } }
                 };
                 await Response.WriteAsync(JsonSerializer.Serialize(envelope) + "\n\n", ct);
                 await Response.Body.FlushAsync(ct);

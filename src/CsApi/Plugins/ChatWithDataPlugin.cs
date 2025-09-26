@@ -3,6 +3,7 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Functions;
 using System.ComponentModel;
 using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace CsApi.Plugins
 {
@@ -91,14 +92,18 @@ namespace CsApi.Plugins
                 var answerRaw = await _sqlConversationRepository.ExecuteChatQuery(sqlQuery, CancellationToken.None);
                 //var answerRaw = await _kernelService.GetSqlResponseAsync(sqlQuery);
                 string answer = answerRaw?.Length > 20000 ? answerRaw.Substring(0, 20000) : answerRaw;
+                Console.WriteLine("SQL QUERY RESULT: " + answer);
                 if (string.IsNullOrWhiteSpace(answer))
                     answer = "No results found.";
 
                 // Clean up
                 agentsClient.Threads.DeleteThread(thread.Id);
 
-                _logger.LogInformation("fabric-SQL-Kernel-response: {Answer}", answer);
-                return answer;
+                // Create structured response with answer and citations
+                var structuredResponse = new { answer = answer, citations = new string[] { } };
+                var jsonResponse = JsonSerializer.Serialize(structuredResponse);
+                _logger.LogInformation("fabric-SQL-Kernel-response: {Answer}", jsonResponse);
+                return jsonResponse;
             }
             catch (Exception ex)
             {
